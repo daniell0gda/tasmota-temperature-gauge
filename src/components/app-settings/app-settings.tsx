@@ -1,4 +1,4 @@
-import {Component, Element, Event, EventEmitter, h, Prop} from '@stencil/core';
+import {Component, Element, Event, EventEmitter, forceUpdate, h, Prop} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {fromEvent, Observable} from 'rxjs';
 import {debounceTime, distinctUntilChanged, filter, map} from 'rxjs/operators';
@@ -15,17 +15,26 @@ export class AppSettingsComponent {
   @Prop() val: number;
 
   settingPrefixKey: string = 'sonoff-th10-temp-url-address';
-  settings:AppSettings = new AppSettings();
+  settings: AppSettings = new AppSettings();
   private urlInput: HTMLIonInputElement;
   private minTempInput: HTMLIonInputElement;
   private maxTempInput: HTMLIonInputElement;
 
+  private addressCorrect: boolean = true;
+  componentWillLoad(): void {
+    this.checkUrl(this.settings.urlValue);
+  }
+
   componentDidRender(): void {
 
     this.watchInputChange(this.urlInput).subscribe((value: string) => {
-      localStorage.setItem(`${this.settingPrefixKey}-url`, value);
-      this.settings.urlValue = value;
-     this.emitSettings();
+
+      if(this.checkUrl(value) || !value){
+        localStorage.setItem(`${this.settingPrefixKey}-url`, value);
+        this.settings.urlValue = value;
+        this.emitSettings();
+      }
+      forceUpdate(this.el);
     });
 
     this.watchInputChange(this.minTempInput).subscribe((value: string) => {
@@ -47,8 +56,11 @@ export class AppSettingsComponent {
     return [
       <ion-list>
         <ion-item>
-          <ion-label position="stacked">Http address</ion-label>
-          <ion-input type="text" ref={(el: HTMLIonInputElement) => this.urlInput = el as any} value={this.settings.urlValue}/>
+          <ion-label position="stacked" color={this.addressCorrect ? '': 'danger' }>
+            {this.addressCorrect ? 'Http address': 'Http address - Use something like http://192.168.3.94/' }
+          </ion-label>
+          <ion-input type="url" inputmode="url" placeholder="Http or Https.." ref={(el: HTMLIonInputElement) => this.urlInput = el as any}
+                     value={this.settings.urlValue}/>
         </ion-item>
         <ion-item>
           <ion-label position="stacked">Min temp</ion-label>
@@ -65,6 +77,19 @@ export class AppSettingsComponent {
   private emitSettings(): void {
 
     this.settingChanged.emit();
+  }
+
+  private checkUrl(value: string): boolean {
+    if (!value) {
+      return;
+    }
+
+    let expression = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi;
+    let regex = new RegExp(expression);
+
+    this.addressCorrect = !!value.match(regex);
+
+    return this.addressCorrect;
   }
 
   private watchInputChange(input: HTMLIonInputElement): Observable<string> {
