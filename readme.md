@@ -5,6 +5,7 @@ I am beer maker, and I am using sonoff all the time just for this purpose. In so
 I was annoying for me to open web page, I wanted to have it always on top.
 
 So this is my simple attempt to achieve that.
+<p align="center"><img src="https://github.com/daniell0gda/tasmota-temperature-gauge/blob/master/.github/thermometerPic.png" alt="thermometer picture"></p>
 
 ## Features
 
@@ -53,6 +54,7 @@ node Electron/createInstaller.js
 - Notice `src/global/globalScript.ts` which is workaround not working ionic icons
 - in `package.json` main script `"main": "Electron/app.js"` is for `electron-packager` 
 this should be changed to `"main": "build/app.js"` if you want to run pure stencil
+
 
 ##Thanks
 - [davidbanks](https://codepen.io/davidbanks) I've reworked his [pen](https://codepen.io/davidbanks/pen/rksLn), added few features
