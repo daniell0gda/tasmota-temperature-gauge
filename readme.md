@@ -34,14 +34,17 @@ to run server locally:
 npm start
 ```
 
+
 to create package ready to be passed on to create installer
 ```bash
+npx tsc ./electron/app.ts
 npm run-script packager
 ```
 
 To create msi installer run (package needs to be already created)
 
 ```bash
+npx tsc ./electron/createInstaller.ts
 node Electron/createInstaller.js
 ```
 
