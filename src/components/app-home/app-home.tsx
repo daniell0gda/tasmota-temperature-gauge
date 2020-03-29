@@ -17,7 +17,7 @@ export class AppHome {
   consoleElement: HTMLConsoleComponentElement;
   service: TempReaderService = new TempReaderService();
   currentTemp: number;
-  sensorNotWorking: boolean = false;
+  sensorOnline: boolean = true;
 
   settings: AppSettings = new AppSettings();
 
@@ -43,11 +43,11 @@ export class AppHome {
       <ion-content>
         <ion-tabs>
           <ion-tab tab="abc">
-            <sensor-temp class={this.sensorNotWorking ? 'inactive' : ''}
+            <sensor-temp class={!this.sensorOnline ? 'inactive' : ''}
                          ref={(ref: any) => this.sensorTempElement = ref as any}
                          val={this.currentTemp}
                          min={this.settings?.minTemp} max={this.settings?.maxTemp}/>
-            <div class="dot alertDot" hidden={!this.sensorNotWorking}/>
+            <div class="dot alertDot" hidden={this.sensorOnline}/>
           </ion-tab>
 
           <ion-tab tab="settings">
@@ -79,7 +79,7 @@ export class AppHome {
     ];
   }
 
-  private async logInfoMsg(msg:string): Promise<void> {
+  private async logInfoMsg(msg: string): Promise<void> {
     const log = new Log();
     log.time = new Date();
     log.type = 'INFO';
@@ -92,19 +92,22 @@ export class AppHome {
       filter((val: number | void) => !!val)
     ).subscribe({
       next: async (temp: number) => {
-        if(!this.currentTemp && temp){
+        if (!this.currentTemp && temp) {
           await this.logInfoMsg('First temperature came in, looks good.');
         }
+        else if (!this.sensorOnline) {
+          await this.logInfoMsg('Back Online.');
+        }
 
-        this.sensorNotWorking = false;
+        this.sensorOnline = true;
         this.currentTemp = temp;
 
         await this.updateGauge();
 
         forceUpdate(this.el);
       },
-      error: async (msg: string) => {
-        this.sensorNotWorking = true;
+      error: async (msg: string|Error) => {
+        this.sensorOnline = false;
         await this.showError(msg);
         forceUpdate(this.el);
       }
@@ -124,11 +127,11 @@ export class AppHome {
     this.startReadingTemp();
   }
 
-  private async showError(msg: string): Promise<any> {
+  private async showError(msg: string|Error): Promise<any> {
     const log = new Log();
     log.time = new Date();
     log.type = 'ERROR';
-    log.value = msg;
+    log.value = msg instanceof Error ?  msg.message : msg;
     await this.consoleElement.update(log);
   }
 }
