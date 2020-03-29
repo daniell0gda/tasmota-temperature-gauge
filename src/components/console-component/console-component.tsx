@@ -30,7 +30,7 @@ export class ConsoleComponent {
     return [
       <ion-content ref={(ref: any) => this.ionContent = ref as any} scrollEvents={true}>
         {
-          this.logs.map((log: Log) => <div class="logMessage ion-padding-top">
+          this.logs.map((log: Log) => <div class="logMessage ion-padding-top ion-padding-start">
             <ion-label color={this.logColorGet(log)} class="ion-padding-end">{this.timeFormat(log.time)}</ion-label>
             <ion-label>{log.value}</ion-label>
           </div>)
@@ -40,7 +40,7 @@ export class ConsoleComponent {
   }
 
   private timeFormat(date: Date): string {
-    return moment(date).calendar();
+    return moment(date).format('HH:mm:ss');
   }
 
   private logColorGet(log: Log): string {

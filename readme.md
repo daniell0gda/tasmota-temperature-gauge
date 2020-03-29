@@ -55,6 +55,8 @@ node Electron/createInstaller.js
 - in `package.json` main script `"main": "Electron/app.js"` is for `electron-packager` 
 this should be changed to `"main": "build/app.js"` if you want to run pure stencil
 
+### Tasmota
+- Go to your local Tasmota home page (of device you are gonna use for this application) and to wifi settings, configure CORS Domain 
 
 ##Thanks
 - [davidbanks](https://codepen.io/davidbanks) I've reworked his [pen](https://codepen.io/davidbanks/pen/rksLn), added few features

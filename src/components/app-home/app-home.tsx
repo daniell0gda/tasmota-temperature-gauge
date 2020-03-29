@@ -27,6 +27,9 @@ export class AppHome {
 
   async componentDidLoad(): Promise<void> {
     await this.el.querySelector<HTMLIonTabsElement>('ion-tabs').select('abc');
+
+    await this.logInfoMsg('App started successfully. Waiting for sensor to get first data..');
+
     this.updateGauge();
     forceUpdate(this.el);
   }
@@ -41,17 +44,17 @@ export class AppHome {
         <ion-tabs>
           <ion-tab tab="abc">
             <sensor-temp class={this.sensorNotWorking ? 'inactive' : ''}
-              ref={(ref: any) => this.sensorTempElement = ref as any}
-              val={this.currentTemp}
-              min={this.settings?.minTemp} max={this.settings?.maxTemp}/>
-              <div class="dot alertDot" hidden={!this.sensorNotWorking}/>
+                         ref={(ref: any) => this.sensorTempElement = ref as any}
+                         val={this.currentTemp}
+                         min={this.settings?.minTemp} max={this.settings?.maxTemp}/>
+            <div class="dot alertDot" hidden={!this.sensorNotWorking}/>
           </ion-tab>
 
           <ion-tab tab="settings">
             <app-settings onSettingChanged={this.onSettingChanged.bind(this)}/>
           </ion-tab>
           <ion-tab tab="console">
-            <console-component  ref={(ref: any) => this.consoleElement = ref as any}/>
+            <console-component ref={(ref: any) => this.consoleElement = ref as any}/>
           </ion-tab>
           <ion-tab-bar slot="bottom">
             <ion-tab-button tab="abc">
@@ -62,11 +65,11 @@ export class AppHome {
 
             <ion-tab-button tab="settings">
               <ion-icon name="cog-outline"/>
-              <ion-label>Ustawienia</ion-label>
+              <ion-label>Settings</ion-label>
             </ion-tab-button>
             <ion-tab-button tab="console">
               <ion-icon name="warning-outline"/>
-              <ion-label>Konsola</ion-label>
+              <ion-label>Console</ion-label>
             </ion-tab-button>
           </ion-tab-bar>
 
@@ -76,14 +79,25 @@ export class AppHome {
     ];
   }
 
+  private async logInfoMsg(msg:string): Promise<void> {
+    const log = new Log();
+    log.time = new Date();
+    log.type = 'INFO';
+    log.value = msg;
+    await this.consoleElement.update(log);
+  }
+
   private startReadingTemp(): void {
     this.service.getCurrentTemperature().pipe(
       filter((val: number | void) => !!val)
     ).subscribe({
       next: async (temp: number) => {
+        if(!this.currentTemp && temp){
+          await this.logInfoMsg('First temperature came in, looks good.');
+        }
+
         this.sensorNotWorking = false;
         this.currentTemp = temp;
-
 
         await this.updateGauge();
 

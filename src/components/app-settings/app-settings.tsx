@@ -47,7 +47,7 @@ export class AppSettingsComponent {
     return [
       <ion-list>
         <ion-item>
-          <ion-label position="stacked">Adres sondy</ion-label>
+          <ion-label position="stacked">Http address</ion-label>
           <ion-input type="text" ref={(el: HTMLIonInputElement) => this.urlInput = el as any} value={this.settings.urlValue}/>
         </ion-item>
         <ion-item>

@@ -3,6 +3,7 @@ import {interval, NEVER, Observable, Subject, throwError} from 'rxjs';
 import {ISensorResponse} from './model';
 import {fromFetch} from 'rxjs/fetch';
 import {filter, map, mergeMap, switchMap, takeUntil, tap} from 'rxjs/operators';
+import urljoin from 'url-join';
 
 export class TempReaderService {
 
@@ -44,10 +45,11 @@ export class TempReaderService {
 //http://192.168.0.220/cm?cmnd=status%208
 
     if (!this.tempAddress) {
-      return throwError('Brak adresu do odczytu temperatury. Idz do ustawień.');
+      return throwError('No address for temperature reading. Go to settings.');
     }
+    const httpAddress =  urljoin(this.tempAddress, '/cm?cmnd=status%208');
     return fromFetch(
-      `${this.tempAddress || ''}/cm?cmnd=status%208`,
+      httpAddress,
       {
         method: 'GET',
         // mode: 'no-cors'
@@ -59,7 +61,7 @@ export class TempReaderService {
           return response.json();
         } else {
           // Server is returning a status requiring the client to try something else.
-          return throwError('Sonda nie odpowiada.');
+          return throwError(`Sonoff doesn't response..`);
         }
       }),
 
