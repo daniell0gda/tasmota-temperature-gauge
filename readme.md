@@ -2,7 +2,7 @@
 
 I am beer maker, and I am using sonoff all the time just for this purpose. In some steps before beer is ready I am using sonoff to keep an eye on my temperature. 
 
-I was annoying for me to open web page, I wanted to have it always on top.
+It was annoying for me to open web page all the time, I wanted to have it always on top.
 
 So this is my simple attempt to achieve that.
 <p align="center"><img src="https://github.com/daniell0gda/tasmota-temperature-gauge/blob/master/.github/thermometerPic.png" alt="thermometer picture"></p>
