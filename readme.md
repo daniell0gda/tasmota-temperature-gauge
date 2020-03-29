@@ -49,8 +49,12 @@ node Electron/createInstaller.js
 ### For Running Electron with stencilJs
 - Notice that electron-serve & electron-store are in package.json dependencies
 - Notice Types folder in `src` directory
-- Generally Electron/main.ts is quite a thing, Many thanks to [adamlacombe](https://github.com/edgeworkscreative/stencil-electron-app-starter/commits?author=adamlacombe) 
-with his [starter](https://github.com/edgeworkscreative/stencil-electron-app-starter) 
+- Generally Electron/main.ts is quite a thing
 - Notice `src/global/globalScript.ts` which is workaround not working ionic icons
 - in `package.json` main script `"main": "Electron/app.js"` is for `electron-packager` 
 this should be changed to `"main": "build/app.js"` if you want to run pure stencil
+
+##Thanks
+- [davidbanks](https://codepen.io/davidbanks) I've reworked his [pen](https://codepen.io/davidbanks/pen/rksLn), added few features
+- [adamlacombe](https://github.com/edgeworkscreative/stencil-electron-app-starter/commits?author=adamlacombe) 
+  with his [starter](https://github.com/edgeworkscreative/stencil-electron-app-starter)
