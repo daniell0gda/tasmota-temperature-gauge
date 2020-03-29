@@ -1,0 +1,89 @@
+/* Document Level Styles */
+
+// @import "../../node_modules/@ionic/core/dist/collection/themes/ionic.theme.default.scss";
+
+/* Document Level Styles */
+
+/*
+  The imports below are needed to include our light dom css for global styles such as fonts and colors.
+  You can comment out any of these imports if you do not need that css. For example, if you have your own
+  global font family css then you can comment out the typography.css import.
+*/
+
+/** Core CSS required for ionic components to work property */
+
+@import "~@ionic/core/css/core.css";
+
+/** Basic CSS for apps built with Ionic */
+
+@import "~@ionic/core/css/normalize.css";
+@import "~@ionic/core/css/structure.css";
+@import "~@ionic/core/css/typography.css";
+
+/** Optional CSS utils that can be commented out */
+
+@import "~@ionic/core/css/padding.css";
+@import "~@ionic/core/css/float-elements.css";
+@import "~@ionic/core/css/text-alignment.css";
+@import "~@ionic/core/css/text-transformation.css";
+@import "~@ionic/core/css/flex-utils.css";
+
+/*
+  The CSS Variables below can be used to theme your app.
+  For more info on CSS variables check out:
+  https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_variables
+  More info about color theming using Ionic:
+  https://beta.ionicframework.com/docs/theming/color-generator
+*/
+
+@keyframes alert-animation {
+  0%{
+    background-color: #ffffff;
+  }
+  50%{
+    background-color: rgb(230, 0, 0);
+  }
+  100%{
+    background-color: #ffffff;
+  }
+}
+@-webkit-keyframes blink-animation {
+  to {
+    visibility: hidden;
+  }
+}
+
+//body, my-app{
+//  --background: transparent;
+//  --ion-background-color: transparent;
+//}
+//.md body.dark
+//{
+//  --background: transparent;
+//  --ion-background-color: transparent;
+//}
+
+.dot {
+  height: 25px;
+  width: 25px;
+  background-color: #bbb;
+  border-radius: 50%;
+  display: inline-block;
+}
+.alertDot {
+  position: absolute;
+  right:10px;
+  top:10px;
+  background-color: rgb(230, 0, 0);
+  animation: alert-animation 3s infinite;
+}
+.inactive {
+  filter: grayscale(100%);
+}
+.displayCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  width: 100%;
+}

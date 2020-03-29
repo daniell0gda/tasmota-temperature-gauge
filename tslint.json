@@ -1,0 +1,82 @@
+{
+  "rules": {
+    "no-duplicate-imports": [
+      true
+    ],
+    "ordered-imports": [
+      false
+    ],
+    "no-unused-variable": true,
+    "rules": {
+      "curly": true
+    },
+    "member-access": [
+      true,
+      "no-public"
+    ],
+    "member-ordering": [
+      true,
+      {
+        "order": "fields-first"
+      }
+    ],
+    "no-var-keyword": true,
+    "triple-equals": true,
+    "switch-final-break": true,
+    "restrict-plus-operands": true,
+    "semicolon": true,
+    "class-name": true,
+    "deprecation": [
+      true
+    ],
+    "indent": [
+      true,
+      "spaces",
+      4
+    ],
+    "no-duplicate-super": true,
+    "await-promise": [
+      true,
+      "Thenable"
+    ],
+    "quotemark": [
+      true,
+      "single",
+      "jsx-double"
+    ],
+    "prefer-for-of": true,
+    "no-eval": true,
+    "no-conditional-assignment": true,
+    "no-string-throw": true,
+    "prefer-readonly": [
+      true
+    ],
+    "no-unnecessary-callback-wrapper": true,
+    "promise-function-async": [
+      true
+    ],
+    "object-literal-key-quotes": [
+      true,
+      "consistent"
+    ],
+    "only-arrow-functions": [
+      true,
+      "allow-named-functions"
+    ],
+    "ban-comma-operator": true,
+    "arrow-return-shorthand": true,
+    "max-line-length": [
+      true,
+      150
+    ],
+    "linebreak-style": false,
+    "align": false,
+    "typedef": [
+      true,
+      "call-signature",
+      "parameter",
+      "arrow-parameter",
+      "property-declaration"
+    ]
+  }
+}

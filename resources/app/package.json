@@ -1,0 +1,23 @@
+{
+  "name": "beer-web",
+  "productName": "tempReader",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Stencil App Starter",
+  "main": "build/app.js",
+  "module": "build/index.mjs",
+  "es2015": "build/esm/index.mjs",
+  "es2017": "build/esm/index.mjs",
+  "jsnext:main": "build/esm/index.mjs",
+  "dependencies": {
+    "electron": "^8.2.0",
+    "electron-builder": "^22.4.1",
+    "electron-forge": "^5.2.4",
+    "electron-packager": "^14.2.1",
+    "electron-serve": "^0.4.1",
+    "electron-store": "^5.1.1"
+  },
+  "devDependencies": {
+
+  }
+}
