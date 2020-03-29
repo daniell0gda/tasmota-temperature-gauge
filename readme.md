@@ -58,7 +58,12 @@ this should be changed to `"main": "build/app.js"` if you want to run pure stenc
 ### Tasmota
 - Go to your local Tasmota home page (of device you are gonna use for this application) and to wifi settings, configure CORS Domain 
 
-##Thanks
+## Thanks
 - [davidbanks](https://codepen.io/davidbanks) I've reworked his [pen](https://codepen.io/davidbanks/pen/rksLn), added few features
 - [adamlacombe](https://github.com/edgeworkscreative/stencil-electron-app-starter/commits?author=adamlacombe) 
   with his [starter](https://github.com/edgeworkscreative/stencil-electron-app-starter)
+  
+## TODO
+
+- Alert when temperature reaches min or max
+- Installer is slow as hell and kinda big (big is maybe not that much fixable because of electron)
