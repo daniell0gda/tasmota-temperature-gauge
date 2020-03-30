@@ -12,6 +12,7 @@ So this is my simple attempt to achieve that.
 - Setting url for Th10 local network
 - Setting min & max temperature
 - Simple "Console" for errors
+- Windows notification when temperature is to low or To High
 
 ## Prerequisites
 - [electron-wix-msi](https://github.com/felixrieseberg/electron-wix-msi)
@@ -67,6 +68,4 @@ this should be changed to `"main": "build/app.js"` if you want to run pure stenc
   with his [starter](https://github.com/edgeworkscreative/stencil-electron-app-starter)
   
 ## TODO
-
-- Alert when temperature reaches min or max
 - Installer is slow as hell and kinda big (big is maybe not that much fixable because of electron)
