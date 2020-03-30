@@ -4,6 +4,7 @@ import {TempReaderService} from './tempReaderService';
 import {filter} from 'rxjs/operators';
 import {AppSettings} from '../../global/settings';
 import {Log} from '../console-component/model';
+import {NotificationService} from './notificationService';
 
 @Component({
   tag: 'app-home',
@@ -15,9 +16,11 @@ export class AppHome {
 
   sensorTempElement: HTMLSensorTempElement;
   consoleElement: HTMLConsoleComponentElement;
-  service: TempReaderService = new TempReaderService();
+  tempReaderService: TempReaderService = new TempReaderService();
+  notificationService: NotificationService = new NotificationService();
   currentTemp: number;
   sensorOnline: boolean = true;
+  tempInRange: boolean = true;
 
   settings: AppSettings = new AppSettings();
 
@@ -29,13 +32,16 @@ export class AppHome {
     await this.el.querySelector<HTMLIonTabsElement>('ion-tabs').select('abc');
 
     await this.logInfoMsg('App started successfully. Waiting for sensor to get first data..');
+    await this.notificationService.askForPermissions();
 
     this.updateGauge();
+
+
     forceUpdate(this.el);
   }
 
   componentDidUnload(): void {
-    this.service.killReading();
+    this.tempReaderService.killReading();
   }
 
   render(): any[] {
@@ -47,7 +53,7 @@ export class AppHome {
                          ref={(ref: any) => this.sensorTempElement = ref as any}
                          val={this.currentTemp}
                          min={this.settings?.minTemp} max={this.settings?.maxTemp}/>
-            <div class="dot alertDot" hidden={this.sensorOnline}/>
+            <div class="dot alertDot" hidden={this.sensorOnline && this.tempInRange}/>
           </ion-tab>
 
           <ion-tab tab="settings">
@@ -88,32 +94,41 @@ export class AppHome {
   }
 
   private startReadingTemp(): void {
-    this.service.getCurrentTemperature().pipe(
+    this.tempReaderService.getCurrentTemperature().pipe(
       filter((val: number | void) => !!val)
     ).subscribe({
       next: async (temp: number) => {
+
         if (!this.currentTemp && temp) {
           await this.logInfoMsg('First temperature came in, looks good.');
-        }
-        else if (!this.sensorOnline) {
+        } else if (!this.sensorOnline) {
           await this.logInfoMsg('Back Online.');
         }
 
         this.sensorOnline = true;
         this.currentTemp = temp;
 
+        const tempInRangeBefore = this.tempInRange;
+        this.tempInRange = temp <= this.settings.maxTemp && temp >= this.settings.minTemp;
+        if (!tempInRangeBefore && this.tempInRange) {
+          this.notificationService.allowNotification();
+          await this.logInfoMsg('Temperature back in range');
+        }
+
+        await this.notificationService.sendNotificationIfNecessary(this.currentTemp, this.settings, this.consoleElement);
+
         await this.updateGauge();
 
         forceUpdate(this.el);
       },
-      error: async (msg: string|Error) => {
+      error: async (msg: string | Error) => {
         this.sensorOnline = false;
         await this.showError(msg);
         forceUpdate(this.el);
       }
     });
 
-    this.service.startReadingTemp();
+    this.tempReaderService.startReadingTemp();
   }
 
   private async updateGauge(): Promise<void> {
@@ -122,16 +137,16 @@ export class AppHome {
   }
 
   private async onSettingChanged(): Promise<void> {
-    this.service.tempAddress = this.settings.urlValue;
+    this.tempReaderService.tempAddress = this.settings.urlValue;
 
     this.startReadingTemp();
   }
 
-  private async showError(msg: string|Error): Promise<any> {
+  private async showError(msg: string | Error): Promise<any> {
     const log = new Log();
     log.time = new Date();
     log.type = 'ERROR';
-    log.value = msg instanceof Error ?  msg.message : msg;
+    log.value = msg instanceof Error ? msg.message : msg;
     await this.consoleElement.update(log);
   }
 }
