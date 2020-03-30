@@ -31,6 +31,11 @@ export class ThermometerGauge {
     this.service.update(current, this.settings);
   }
 
+  @Method()
+  async changeSize(width?: number, height?: number): Promise<void> {
+    await this.service.changeSize(width, height);
+  }
+
   render(): any[] {
     return [
       <div id="thermometer" class="displayCenter"/>

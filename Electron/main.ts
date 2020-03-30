@@ -1,4 +1,4 @@
-import {BrowserWindow, Tray, Menu} from 'electron';
+import {BrowserWindow, Menu, Tray} from 'electron';
 import {readFileSync} from 'fs';
 import {PackageJson} from '../src/Types/package-json';
 
@@ -65,7 +65,7 @@ export class Main {
       skipTaskbar:true,
       frame:true,
       thickFrame:false,
-      resizable:false,
+      resizable:true,
       autoHideMenuBar:true,
       alwaysOnTop:true
     });
