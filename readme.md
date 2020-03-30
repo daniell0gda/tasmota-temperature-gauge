@@ -13,6 +13,8 @@ So this is my simple attempt to achieve that.
 - Setting min & max temperature
 - Simple "Console" for errors
 - Windows notification when temperature is to low or To High
+- App is set to be always on Top
+- App theme changes from black theme to white depending on Window's preferences
 
 ## Prerequisites
 - [electron-wix-msi](https://github.com/felixrieseberg/electron-wix-msi)
