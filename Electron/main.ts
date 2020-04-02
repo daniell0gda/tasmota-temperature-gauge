@@ -58,13 +58,12 @@ export class Main {
     Main.mainWindow = new Main.BrowserWindow({
       icon: iconPath,
       webPreferences: {
-        nodeIntegration: true
+        nodeIntegration: false
       },
       width:250,
-      height:300,
-      skipTaskbar:true,
+      height:320,
+      skipTaskbar:false,
       frame:true,
-      thickFrame:false,
       resizable:true,
       autoHideMenuBar:true,
       alwaysOnTop:true

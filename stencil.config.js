@@ -1,5 +1,6 @@
-const { sass } = require('@stencil/sass');
 
+const { sass } = require('@stencil/sass');
+const nodePolyfills = require('rollup-plugin-node-polyfills');
 exports.config = {
     outputTargets: [{
         type: 'www',
@@ -12,6 +13,11 @@ exports.config = {
             ]
         })
     ],
+    rollupPlugins: {
+      after: [
+        nodePolyfills(),
+      ]
+    },
     globalScript: 'src/global/globalScript.ts',
     globalStyle: 'src/global/app.scss',
     testing: {

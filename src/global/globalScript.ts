@@ -1,23 +1,5 @@
-import {Remote} from '../Types/remote';
-
-declare var Context: any;
 
 try{
-
-  const electronRemote = require('electron').remote;
-  const Store = electronRemote.require('electron-store');
-  const isDev = process.execPath.includes('node_modules/electron/dist/electron');
-
-  const remote: Remote = {
-    isDev: isDev,
-    rootDir: (isDev) ? process.execPath + '/../../../../' : process.execPath + '/../resources/app/',
-    store: new Store(),
-    os: electronRemote.require('os'),
-    menu: electronRemote.Menu,
-    packageJson: JSON.parse(electronRemote.require('fs').readFileSync((isDev) ? 'package.json' : 'resources/app/package.json', 'utf8')),
-    notifier: electronRemote.require('node-notifier')
-  };
-  Context.remote = remote;
 
   /**
    * ion-icon svg fetch fails because 'stencil-electron' schema is not supported.
