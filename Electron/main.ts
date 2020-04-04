@@ -18,6 +18,7 @@ if (isDev) {
 // https://medium.com/@davembush/typescript-and-electron-the-right-way-141c2e15e4e1
 export class Main {
   static mainWindow: Electron.BrowserWindow;
+  static splash:Electron.BrowserWindow;
   static application: Electron.App;
   static BrowserWindow: typeof BrowserWindow;
   static isQuiting:boolean = false;
@@ -66,8 +67,13 @@ export class Main {
       frame:true,
       resizable:true,
       autoHideMenuBar:true,
-      alwaysOnTop:true
+      alwaysOnTop:true,
+      show:true
     });
+    //Main.splash = new BrowserWindow({width: 810, height: 610, transparent: true, frame: false, alwaysOnTop: true});
+
+    const splashHtml = path.join(__dirname, 'splash.html');
+    await Main.splash.loadURL(`file://${splashHtml}`);
 
     const contextMenu = Menu.buildFromTemplate([
       { label: 'Pokaż Termometr', click:  ()=>{
@@ -94,6 +100,10 @@ export class Main {
       Main.mainWindow.hide();
     });
 
-
+    // if main window is ready to show, then destroy the splash window and show up the main window
+    // Main.mainWindow.once('ready-to-show', () => {
+    //   Main.splash.destroy();
+    //   Main.mainWindow.show();
+    // });
   }
 }
