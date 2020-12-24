@@ -1,4 +1,4 @@
-import {Component, Element, h, Method} from '@stencil/core';
+import {Component, Element, h, Host, Method} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {ThermometerGaugeService} from './thermometer-gauge.service';
 import {ThermometerSettings} from './model';
@@ -31,14 +31,14 @@ export class ThermometerGauge {
     this.service.update(current, this.settings);
   }
 
-  @Method()
-  async changeSize(width?: number, height?: number): Promise<void> {
-    await this.service.changeSize(width, height);
-  }
-
-  render(): any[] {
-    return [
+  render(): any {
+    return  <Host
+      class={{
+        'component-flex-container': true,
+        'height-100': true
+      }}
+    >
       <div id="thermometer" class="displayCenter"/>
-    ];
+    </Host>;
   }
 }

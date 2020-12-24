@@ -21,15 +21,17 @@ export class AppSettingsComponent {
   private maxTempInput: HTMLIonInputElement;
 
   private addressCorrect: boolean = true;
+
   componentWillLoad(): void {
     this.checkUrl(this.settings.urlValue);
   }
 
   componentDidRender(): void {
+    console.log('sending notification');
 
     this.watchInputChange(this.urlInput).subscribe((value: string) => {
 
-      if(this.checkUrl(value) || !value){
+      if (this.checkUrl(value) || !value) {
         localStorage.setItem(`${this.settingPrefixKey}-url`, value);
         this.settings.urlValue = value;
         this.emitSettings();
@@ -56,8 +58,8 @@ export class AppSettingsComponent {
     return [
       <ion-list>
         <ion-item>
-          <ion-label position="stacked" color={this.addressCorrect ? '': 'danger' }>
-            {this.addressCorrect ? 'Http address': 'Http address - Use something like http://192.168.3.94/' }
+          <ion-label position="stacked" color={this.addressCorrect ? '' : 'danger'}>
+            {this.addressCorrect ? 'Http address' : 'Http address - Use something like http://192.168.3.94/'}
           </ion-label>
           <ion-input type="url" inputmode="url" placeholder="Http or Https.." ref={(el: HTMLIonInputElement) => this.urlInput = el as any}
                      value={this.settings.urlValue}/>
@@ -95,7 +97,7 @@ export class AppSettingsComponent {
   private watchInputChange(input: HTMLIonInputElement): Observable<string> {
     return fromEvent(input, 'ionChange')
       .pipe(
-        debounceTime(500),
+        debounceTime(1000),
         filter((event: CustomEvent<{ value: string }>) => event !== undefined),
         map((event: CustomEvent<{ value: string }>) => event.detail.value),
         distinctUntilChanged()

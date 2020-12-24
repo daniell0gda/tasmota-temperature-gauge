@@ -1,10 +1,11 @@
-import {Component, Element, forceUpdate, h} from '@stencil/core';
+import {Component, Element, Event, EventEmitter, forceUpdate, h} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {TempReaderService} from './tempReaderService';
-import {filter} from 'rxjs/operators';
+import {filter, takeUntil} from 'rxjs/operators';
 import {AppSettings} from '../../global/settings';
 import {Log} from '../console-component/model';
 import {NotificationService} from './notificationService';
+import {Subject} from 'rxjs';
 
 @Component({
   tag: 'app-home',
@@ -14,6 +15,11 @@ export class AppHome {
 
   @Element() el: HTMLStencilElement;
 
+  @Event({
+    bubbles: true,
+    composed: true
+  }) domReady: EventEmitter;
+
   sensorTempElement: HTMLSensorTempElement;
   consoleElement: HTMLConsoleComponentElement;
   tempReaderService: TempReaderService = new TempReaderService();
@@ -21,11 +27,15 @@ export class AppHome {
   currentTemp: number;
   sensorOnline: boolean = true;
   tempInRange: boolean = true;
-
   settings: AppSettings = new AppSettings();
+  killReading$: Subject<boolean> = new Subject<boolean>();
+  private tempChart: HTMLTemperatureChartElement | undefined;
 
   componentWillLoad(): void {
-    (document.querySelector('#appSplashScreen') as HTMLElement).className += ' splashHide';
+    const appSplashScreen = (document.querySelector('#appSplashScreen') as HTMLElement);
+    if (appSplashScreen) {
+      appSplashScreen.className += ' splashHide';
+    }
   }
 
   async componentDidLoad(): Promise<void> {
@@ -36,11 +46,13 @@ export class AppHome {
 
     this.updateGauge();
 
-
     forceUpdate(this.el);
+
+    this.domReady.emit();
   }
 
   componentDidUnload(): void {
+    this.killReading$.next();
     this.tempReaderService.killReading();
   }
 
@@ -49,11 +61,18 @@ export class AppHome {
       <ion-content>
         <ion-tabs>
           <ion-tab tab="abc">
-            <sensor-temp class={!this.sensorOnline ? 'inactive' : ''}
-                         ref={(ref: any) => this.sensorTempElement = ref as any}
-                         val={this.currentTemp}
-                         min={this.settings?.minTemp} max={this.settings?.maxTemp}/>
-            <div class="dot alertDot" hidden={this.sensorOnline && this.tempInRange}/>
+            <sensor-temp
+              class={!this.sensorOnline ? 'inactive' : ''}
+              ref={(ref: any) => this.sensorTempElement = ref as any}
+              val={this.currentTemp}
+              min={this.settings?.minTemp} max={this.settings?.maxTemp}/>
+            <div class={{
+              'dot': true,
+              'dotWithText': !!this.currentTemp,
+              'alertDot': !this.sensorOnline || !this.tempInRange
+            }}>
+              {this.currentTemp}
+            </div>
           </ion-tab>
 
           <ion-tab tab="settings">
@@ -61,6 +80,9 @@ export class AppHome {
           </ion-tab>
           <ion-tab tab="console">
             <console-component ref={(ref: any) => this.consoleElement = ref as any}/>
+          </ion-tab>
+          <ion-tab tab="chart">
+            <temperature-chart ref={(el: HTMLTemperatureChartElement | undefined) => this.tempChart = el as HTMLTemperatureChartElement}/>
           </ion-tab>
           <ion-tab-bar slot="bottom">
             <ion-tab-button tab="abc">
@@ -76,6 +98,10 @@ export class AppHome {
             <ion-tab-button tab="console">
               <ion-icon name="warning-outline"/>
               <ion-label>Console</ion-label>
+            </ion-tab-button>
+            <ion-tab-button tab="chart">
+              <ion-icon name="analytics-outline"></ion-icon>
+              <ion-label>Chart</ion-label>
             </ion-tab-button>
           </ion-tab-bar>
 
@@ -94,10 +120,13 @@ export class AppHome {
   }
 
   private startReadingTemp(): void {
+    let counter: number = 1;
     this.tempReaderService.getCurrentTemperature().pipe(
-      filter((val: number | void) => !!val)
+      filter((val: number | void) => !!val),
+      takeUntil(this.killReading$)
     ).subscribe({
       next: async (temp: number) => {
+        counter++;
 
         if (!this.currentTemp && temp) {
           await this.logInfoMsg('First temperature came in, looks good.');
@@ -105,8 +134,13 @@ export class AppHome {
           await this.logInfoMsg('Back Online.');
         }
 
+        if (counter % 60 === 0) {
+          await this.logInfoMsg(`Current temperature: ${temp}`);
+        }
+
         this.sensorOnline = true;
         this.currentTemp = temp;
+
 
         const tempInRangeBefore = this.tempInRange;
         this.tempInRange = temp <= this.settings.maxTemp && temp >= this.settings.minTemp;
@@ -117,6 +151,7 @@ export class AppHome {
 
         await this.notificationService.sendNotificationIfNecessary(this.currentTemp, this.settings, this.consoleElement);
 
+        await this.tempChart.update(temp, new Date());
         await this.updateGauge();
 
         forceUpdate(this.el);
@@ -125,6 +160,10 @@ export class AppHome {
         this.sensorOnline = false;
         await this.showError(msg);
         forceUpdate(this.el);
+
+        setTimeout(() => {
+          this.startReadingTemp();
+        }, 3000);
       }
     });
 

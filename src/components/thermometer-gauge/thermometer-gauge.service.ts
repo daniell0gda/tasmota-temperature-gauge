@@ -71,7 +71,7 @@ export class ThermometerGaugeService {
 
     svg.select('.rectMercury')
       .attr('height', oldHeight)
-      .transition().duration(500)
+      .transition().duration(200)
       .attr('y', tubeFill_top)
       .attr('height', () => {
         return newHeight;
@@ -97,23 +97,6 @@ export class ThermometerGaugeService {
     this.createOrUpdateScale(svg);
   }
 
-  async changeSize(width?: number, height?: number): Promise<void> {
-
-    let svg = d3.select(`#${this.settings.containerId}`).select('svg');
-    if (width) {
-      svg.attr('width', `${width}px`);
-    }
-    else{
-      svg.attr('width', null);
-    }
-    if (height) {
-      svg.attr('height', `${height - 10}px`);
-    }
-    else{
-      svg.attr('height', null);
-    }
-  }
-
   private setDomain(settings: ThermometerSettings): void {
     // Determine a suitable range of the temperature scale
     this.domain = [
@@ -137,12 +120,7 @@ export class ThermometerGaugeService {
       .attr('height', this.settings.height)
       .attr('viewBox', '0 0 100 200');
 
-    if (this.settings.width) {
-      svg.attr('width', this.settings.width);
-    }
-    if (this.settings.height) {
-      svg.attr('height', this.settings.height);
-    }
+    svg.attr('height', '100%');
 
     let defs = svg.append('defs');
 

@@ -1,10 +1,13 @@
 import Push from 'push.js';
 import {AppSettings} from '../../global/settings';
 import {Log} from '../console-component/model';
+import {AndroidNotificationsService} from './androidNotificationsService';
+
 
 export class NotificationService {
 
   sendNotification: boolean = true;
+  androidNotification: AndroidNotificationsService = new AndroidNotificationsService();
 
   async sendNotificationIfNecessary(temp: number, settings: AppSettings, consoleElement: HTMLConsoleComponentElement): Promise<void> {
 
@@ -31,9 +34,8 @@ export class NotificationService {
 
 
   async askForPermissions(): Promise<NotificationPermission> {
-    if (!Notification) {
-      alert('Desktop notifications not available in your browser. Try chrome.');
-      return Promise.reject();
+    if (typeof Notification === 'undefined') {
+      return Promise.resolve('denied' as NotificationPermission);
     }
 
     if (Notification.permission === 'granted') {
@@ -46,8 +48,12 @@ export class NotificationService {
   }
 
   private async sendDesctopNotification(title: string, notificationContent: string): Promise<any> {
-    if (Notification.permission !== 'granted') {
-      throw new Error('Notification not granted');
+    if (typeof Notification === 'undefined') {
+      return this.androidNotification.send(title, notificationContent);
+    }
+
+    if (Notification?.permission !== 'granted') {
+      return;
     }
     if (!this.sendNotification) {
       return Promise.resolve();

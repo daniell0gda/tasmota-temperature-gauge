@@ -1,0 +1,18 @@
+{
+  "appId": "com.tasmota.temperature.app",
+  "appName": "tasmota-temperature-gauge",
+  "bundledWebRuntime": false,
+  "npmClient": "npm",
+  "webDir": "www",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  },
+  "android": {
+    "webContentsDebuggingEnabled": true
+  },
+  "server": {
+    "cleartext": true
+  }
+}

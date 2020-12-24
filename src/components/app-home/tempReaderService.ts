@@ -2,7 +2,7 @@ import {interval, NEVER, Observable, Subject, throwError} from 'rxjs';
 
 import {ISensorResponse} from './model';
 import {fromFetch} from 'rxjs/fetch';
-import {filter, map, mergeMap, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {catchError, exhaustMap, filter, map, mergeMap, switchMap, takeUntil, tap} from 'rxjs/operators';
 import urljoin from 'url-join';
 
 export class TempReaderService {
@@ -13,6 +13,7 @@ export class TempReaderService {
 
   tempAddress: string = '';
   checkEvery: number = 1000;
+  lastReading: number = 0;
 
   constructor() {
     this.sensorStateChanged = new Subject();
@@ -20,13 +21,7 @@ export class TempReaderService {
 
   getCurrentTemperature(): Observable<number | void> {
 
-    return this.reading$.pipe(
-      mergeMap((val: boolean) => {
-        return val ? interval(this.checkEvery).pipe(
-          mergeMap(() => this.readTemp())
-        ) : NEVER;
-      })
-    );
+    return this.pollData();
   }
 
   stopReadingTemp(): void {
@@ -41,13 +36,30 @@ export class TempReaderService {
     this.reading$.next(true);
   }
 
+  private pollData(): Observable<number | void> {
+    const extracted = (val: boolean) => {
+      return val ? interval(this.checkEvery).pipe(
+        exhaustMap(() => this.readTemp())
+      ) : NEVER;
+    };
+
+    return this.reading$.pipe(
+      mergeMap((val: boolean) => {
+        return extracted(val);
+      })
+    );
+  }
+
   private readonly readTemp = () => {
 //http://192.168.0.220/cm?cmnd=status%208
 
     if (!this.tempAddress) {
       return throwError('No address for temperature reading. Go to settings.');
     }
-    const httpAddress =  urljoin(this.tempAddress, '/cm?cmnd=status%208');
+
+    this.reading$.next(false);
+
+    const httpAddress = urljoin(this.tempAddress, '/cm?cmnd=status%208');
     return fromFetch(
       httpAddress,
       {
@@ -55,9 +67,13 @@ export class TempReaderService {
         // mode: 'no-cors'
       }
     ).pipe(
+      catchError((error: any) => {
+        console.error(error);
+        return throwError(['There is a problem with polling request (network problem).', error].join('; '));
+      }),
       switchMap((response: Response) => {
+
         if (response.ok) {
-          // OK return data
           return response.json();
         } else {
           // Server is returning a status requiring the client to try something else.
@@ -76,7 +92,10 @@ export class TempReaderService {
         }
       }),
       map((response: ISensorResponse) => response.StatusSNS.DS18B20.Temperature),
-      takeUntil(this.killReading$)
+      takeUntil(this.killReading$),
+      tap((value: number) => {
+        this.lastReading = value;
+      })
     );
   };
 }

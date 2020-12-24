@@ -1,0 +1,19 @@
+{
+  "compileOnSave": true,
+  "include": ["./src/*"],
+  "compilerOptions": {
+    "outDir": "./build",
+    "importHelpers": true,
+    "target": "ES2017",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "allowUnreachableCode": false,
+    "declaration": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}
