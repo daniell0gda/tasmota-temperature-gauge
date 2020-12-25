@@ -5,6 +5,7 @@ exports.config = {
     baseUrl:'http://piwotworki',
     serviceWorker: null
   }],
+
   plugins: [
     sass({
       injectGlobalPaths: [

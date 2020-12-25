@@ -1,11 +1,14 @@
 import {Component, Element, Event, EventEmitter, forceUpdate, h} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
-import {TempReaderService} from './tempReaderService';
+import {TempReaderService} from '../../global/tempReaderService';
 import {filter, takeUntil} from 'rxjs/operators';
 import {AppSettings} from '../../global/settings';
 import {Log} from '../console-component/model';
-import {NotificationService} from './notificationService';
+import {NotificationService} from '../../global/notificationService';
 import {Subject} from 'rxjs';
+import {TempKeeper} from '../../global/tempKeeper';
+import {IPowerChangeResponse} from './model';
+
 
 @Component({
   tag: 'app-home',
@@ -29,6 +32,9 @@ export class AppHome {
   tempInRange: boolean = true;
   settings: AppSettings = new AppSettings();
   killReading$: Subject<boolean> = new Subject<boolean>();
+  keeper: TempKeeper = new TempKeeper();
+  devicePower: IPowerChangeResponse;
+
   private tempChart: HTMLTemperatureChartElement | undefined;
 
   componentWillLoad(): void {
@@ -72,6 +78,13 @@ export class AppHome {
               'alertDot': !this.sensorOnline || !this.tempInRange
             }}>
               {this.currentTemp}
+            </div>
+            <div
+              hidden={this.devicePower?.POWER === 'OFF'}
+              class={{
+                'freezingIcon': true
+              }}>
+              <ion-icon name="snow-outline"/>
             </div>
           </ion-tab>
 
@@ -140,7 +153,7 @@ export class AppHome {
 
         this.sensorOnline = true;
         this.currentTemp = temp;
-
+        this.keeper.currentTemp = temp;
 
         const tempInRangeBefore = this.tempInRange;
         this.tempInRange = temp <= this.settings.maxTemp && temp >= this.settings.minTemp;
@@ -167,7 +180,31 @@ export class AppHome {
       }
     });
 
+    this.manageDevice();
+
+    this.keeper.msgFeed.subscribe(async (msg: string) => {
+      await this.logInfoMsg(msg);
+    });
+
     this.tempReaderService.startReadingTemp();
+  }
+
+  private manageDevice(): void {
+    this.keeper.run().pipe().subscribe({
+      next: async (devicePower: IPowerChangeResponse) => {
+        this.devicePower = devicePower;
+        forceUpdate(this.el);
+      },
+      error: async (msg: string | Error) => {
+        this.sensorOnline = false;
+        await this.showError(msg);
+        forceUpdate(this.el);
+
+        setTimeout(() => {
+          this.manageDevice();
+        }, 30000);
+      }
+    });
   }
 
   private async updateGauge(): Promise<void> {

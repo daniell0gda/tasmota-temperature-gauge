@@ -3,6 +3,7 @@ import {HTMLStencilElement} from '@stencil/core/internal';
 import {fromEvent, Observable} from 'rxjs';
 import {debounceTime, distinctUntilChanged, filter, map} from 'rxjs/operators';
 import {AppSettings} from '../../global/settings';
+import {ToggleChangeEventDetail} from '@ionic/core';
 
 @Component({
   tag: 'app-settings'
@@ -22,7 +23,8 @@ export class AppSettingsComponent {
 
   private addressCorrect: boolean = true;
 
-  componentWillLoad(): void {
+  async componentWillLoad(): Promise<void> {
+    await this.settings.updateSettings();
     this.checkUrl(this.settings.urlValue);
   }
 
@@ -32,7 +34,6 @@ export class AppSettingsComponent {
     this.watchInputChange(this.urlInput).subscribe((value: string) => {
 
       if (this.checkUrl(value) || !value) {
-        localStorage.setItem(`${this.settingPrefixKey}-url`, value);
         this.settings.urlValue = value;
         this.emitSettings();
       }
@@ -72,6 +73,12 @@ export class AppSettingsComponent {
           <ion-label position="stacked">Max temp</ion-label>
           <ion-input type="number" ref={(el: HTMLIonInputElement) => this.maxTempInput = el as any} value={this.settings.maxTemp}/>
         </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Use as a Thermostat</ion-label>
+          <ion-toggle
+            checked={this.settings.useAsThermostat as boolean}
+            onIonChange={(ev: CustomEvent<ToggleChangeEventDetail>) => this.toggleChanged(ev.detail.checked)}/>
+        </ion-item>
       </ion-list>
     ];
   }
@@ -94,7 +101,7 @@ export class AppSettingsComponent {
     return this.addressCorrect;
   }
 
-  private watchInputChange(input: HTMLIonInputElement): Observable<string> {
+  private watchInputChange(input: HTMLIonInputElement | HTMLIonToggleElement): Observable<string> {
     return fromEvent(input, 'ionChange')
       .pipe(
         debounceTime(1000),
@@ -102,5 +109,10 @@ export class AppSettingsComponent {
         map((event: CustomEvent<{ value: string }>) => event.detail.value),
         distinctUntilChanged()
       );
+  }
+
+  private toggleChanged(detail: boolean): void {
+    this.settings.useAsThermostat = detail;
+    this.emitSettings();
   }
 }

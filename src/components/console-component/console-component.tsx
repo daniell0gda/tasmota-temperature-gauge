@@ -2,6 +2,8 @@ import {Component, Element, forceUpdate, h, Method} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {Log} from './model';
 import moment from 'moment';
+import {ConsoleStorage} from '../../global/consoleStorage';
+import {ITempLog} from '../app-home/model';
 
 @Component({
   tag: 'console-component',
@@ -13,7 +15,18 @@ export class ConsoleComponent {
 
   logs: Log[] = [];
   ionContent: HTMLIonContentElement;
-  componentWillLoad(): void {
+  storage: ConsoleStorage = new ConsoleStorage();
+
+  async componentWillLoad(): Promise<void> {
+    const logs = await this.storage.getErrors();
+    logs.map((log: ITempLog) => {
+      const newLog = new Log();
+      newLog.type = 'ERROR';
+      newLog.value = log.error;
+      return newLog;
+    });
+
+    this.trimVisibleLogs();
   }
 
   async componentDidLoad(): Promise<void> {
@@ -22,7 +35,11 @@ export class ConsoleComponent {
 
   @Method()
   async update(log: Log): Promise<void> {
+
+    this.trimVisibleLogs();
+
     this.logs.push(log);
+
     forceUpdate(this.el);
   }
 
@@ -37,6 +54,13 @@ export class ConsoleComponent {
         }
       </ion-content>
     ];
+  }
+
+  private trimVisibleLogs(): void {
+    const logsLength = this.logs.length;
+    if (logsLength > 1000) {
+      this.logs.splice(0, logsLength - 1000);
+    }
   }
 
   private timeFormat(date: Date): string {

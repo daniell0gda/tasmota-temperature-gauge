@@ -75,6 +75,15 @@
   color: var(--ion-background-color);
   font-weight: bold;
 }
+.freezingIcon{
+  position: absolute;
+  right: 63px;
+  top: 10px;
+  ion-icon{
+    font-size: 51px;
+    color: #a1a1ea;
+  }
+}
 
 .alertDot {
 

@@ -1,35 +1,66 @@
+import {Plugins} from '@capacitor/core';
+
+const {Storage} = Plugins;
+
+export interface ISettings {
+  urlValue?: string;
+  minTemp?: number;
+  maxTemp?: number;
+  useAsThermostat?: boolean;
+}
+
 export class AppSettings {
-  key:string =  'sonoff-th10-prefix';
+
+  settings: ISettings = {};
+
+  constructor(public key: string = 'sonoff-th10-settings') {
+
+  }
 
   get urlValue(): string {
-    return localStorage.getItem(`${this.key}-url`);
+    return this.settings?.urlValue;
   }
 
   set urlValue(value: string) {
-    localStorage.setItem(`${this.key}-url`, value);
+    this.settings.urlValue = value;
+
+    Storage.set({
+      value: this.key,
+      key: JSON.stringify(this.settings)
+    });
   }
 
   get minTemp(): number | undefined {
-    const minTemp = localStorage.getItem(`${this.key}-minTemp`);
-    if (minTemp) {
-      return parseInt(minTemp);
-    }
-    return;
+    return this.settings?.minTemp;
   }
 
   set minTemp(value: number | undefined) {
-    localStorage.setItem(`${this.key}-minTemp`, `${value}`);
+    this.settings.minTemp = value;
   }
 
   get maxTemp(): number | undefined {
-    const minTemp = localStorage.getItem(`${this.key}-maxTemp`);
-    if (minTemp) {
-      return parseInt(minTemp);
-    }
-    return;
+    return this.settings?.maxTemp;
   }
 
   set maxTemp(value: number | undefined) {
-    localStorage.setItem(`${this.key}-maxTemp`, `${value}`);
+    this.settings.maxTemp = value;
+  }
+
+  get useAsThermostat(): boolean {
+    const value = this.settings?.useAsThermostat as any;
+    return value === 'true';
+  }
+
+  set useAsThermostat(value: boolean) {
+    this.settings.useAsThermostat = value;
+  }
+
+  async updateSettings(): Promise<ISettings> {
+    const data = await Storage.get({key: `${this.key}`});
+    if (data.value) {
+      this.settings = JSON.parse(data.value);
+    }
+    this.settings = {};
+    return this.settings;
   }
 }

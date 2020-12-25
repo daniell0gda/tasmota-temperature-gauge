@@ -1,7 +1,7 @@
 import Push from 'push.js';
-import {AppSettings} from '../../global/settings';
-import {Log} from '../console-component/model';
-import {AndroidNotificationsService} from './androidNotificationsService';
+import {AppSettings} from './settings';
+import {Log} from '../components/console-component/model';
+import {AndroidNotificationsService} from '../components/app-home/androidNotificationsService';
 
 
 export class NotificationService {
@@ -9,7 +9,7 @@ export class NotificationService {
   sendNotification: boolean = true;
   androidNotification: AndroidNotificationsService = new AndroidNotificationsService();
 
-  async sendNotificationIfNecessary(temp: number, settings: AppSettings, consoleElement: HTMLConsoleComponentElement): Promise<void> {
+  async sendNotificationIfNecessary(temp: number, settings: AppSettings, consoleElement?: HTMLConsoleComponentElement): Promise<void> {
 
     const log = new Log();
     log.time = new Date();
@@ -19,12 +19,12 @@ export class NotificationService {
       const toHighMsg = `'Temperature is higher than ${settings.maxTemp}'`;
       this.sendDesctopNotification('Temperature Alert', toHighMsg);
       log.value = toHighMsg;
-      await consoleElement.update(log);
+      await consoleElement?.update(log);
     } else if (temp < settings.minTemp) {
       const toLowMsg = `'Temperature is lower than ${settings.minTemp}'`;
       log.value = toLowMsg;
       this.sendDesctopNotification('Temperature Alert', toLowMsg);
-      await consoleElement.update(log);
+      await consoleElement?.update(log);
     }
   }
 

@@ -1,6 +1,6 @@
 import {interval, NEVER, Observable, Subject, throwError} from 'rxjs';
 
-import {ISensorResponse} from './model';
+import {ISensorResponse} from '../components/app-home/model';
 import {fromFetch} from 'rxjs/fetch';
 import {catchError, exhaustMap, filter, map, mergeMap, switchMap, takeUntil, tap} from 'rxjs/operators';
 import urljoin from 'url-join';
@@ -12,7 +12,7 @@ export class TempReaderService {
   killReading$: Subject<boolean> = new Subject<boolean>();
 
   tempAddress: string = '';
-  checkEvery: number = 1000;
+  checkEvery: number = 2000;
   lastReading: number = 0;
 
   constructor() {
@@ -20,7 +20,6 @@ export class TempReaderService {
   }
 
   getCurrentTemperature(): Observable<number | void> {
-
     return this.pollData();
   }
 
