@@ -24,10 +24,7 @@ export class AppSettings {
   set urlValue(value: string) {
     this.settings.urlValue = value;
 
-    Storage.set({
-      value: this.key,
-      key: JSON.stringify(this.settings)
-    });
+   this.saveSettings();
   }
 
   get minTemp(): number | undefined {
@@ -36,6 +33,7 @@ export class AppSettings {
 
   set minTemp(value: number | undefined) {
     this.settings.minTemp = value;
+    this.saveSettings();
   }
 
   get maxTemp(): number | undefined {
@@ -44,6 +42,7 @@ export class AppSettings {
 
   set maxTemp(value: number | undefined) {
     this.settings.maxTemp = value;
+    this.saveSettings();
   }
 
   get useAsThermostat(): boolean {
@@ -53,6 +52,7 @@ export class AppSettings {
 
   set useAsThermostat(value: boolean) {
     this.settings.useAsThermostat = value;
+    this.saveSettings();
   }
 
   async updateSettings(): Promise<ISettings> {
@@ -60,7 +60,15 @@ export class AppSettings {
     if (data.value) {
       this.settings = JSON.parse(data.value);
     }
-    this.settings = {};
+    else{
+      this.settings = {};
+    }
     return this.settings;
+  }
+  private saveSettings(): void {
+    Storage.set({
+      key: this.key,
+      value: JSON.stringify(this.settings)
+    });
   }
 }

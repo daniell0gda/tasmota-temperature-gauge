@@ -2,12 +2,13 @@ import {Component, Element, Event, EventEmitter, forceUpdate, h} from '@stencil/
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {TempReaderService} from '../../global/tempReaderService';
 import {filter, takeUntil} from 'rxjs/operators';
-import {AppSettings} from '../../global/settings';
+
 import {Log} from '../console-component/model';
 import {NotificationService} from '../../global/notificationService';
 import {Subject} from 'rxjs';
 import {TempKeeper} from '../../global/tempKeeper';
 import {IPowerChangeResponse} from './model';
+import {Settings} from '../my-app/settings';
 
 
 @Component({
@@ -30,7 +31,6 @@ export class AppHome {
   currentTemp: number;
   sensorOnline: boolean = true;
   tempInRange: boolean = true;
-  settings: AppSettings = new AppSettings();
   killReading$: Subject<boolean> = new Subject<boolean>();
   keeper: TempKeeper = new TempKeeper();
   devicePower: IPowerChangeResponse;
@@ -71,7 +71,7 @@ export class AppHome {
               class={!this.sensorOnline ? 'inactive' : ''}
               ref={(ref: any) => this.sensorTempElement = ref as any}
               val={this.currentTemp}
-              min={this.settings?.minTemp} max={this.settings?.maxTemp}/>
+              min={Settings.settings?.minTemp} max={Settings?.maxTemp}/>
             <div class={{
               'dot': true,
               'dotWithText': !!this.currentTemp,
@@ -156,13 +156,13 @@ export class AppHome {
         this.keeper.currentTemp = temp;
 
         const tempInRangeBefore = this.tempInRange;
-        this.tempInRange = temp <= this.settings.maxTemp && temp >= this.settings.minTemp;
+        this.tempInRange = temp <= Settings.maxTemp && temp >= Settings.minTemp;
         if (!tempInRangeBefore && this.tempInRange) {
           this.notificationService.allowNotification();
           await this.logInfoMsg('Temperature back in range');
         }
 
-        await this.notificationService.sendNotificationIfNecessary(this.currentTemp, this.settings, this.consoleElement);
+        await this.notificationService.sendNotificationIfNecessary(this.currentTemp, Settings, this.consoleElement);
 
         await this.tempChart.update(temp, new Date());
         await this.updateGauge();
@@ -213,7 +213,7 @@ export class AppHome {
   }
 
   private async onSettingChanged(): Promise<void> {
-    this.tempReaderService.tempAddress = this.settings.urlValue;
+    this.tempReaderService.tempAddress = Settings.urlValue;
 
     this.startReadingTemp();
   }

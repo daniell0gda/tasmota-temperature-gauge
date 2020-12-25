@@ -1,5 +1,6 @@
 import {Component, Element, h, Listen} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
+import {Settings} from './settings';
 
 @Component({
     tag: 'my-app',
@@ -12,8 +13,9 @@ export class MyApp {
 
     @Element() el: HTMLStencilElement;
 
-    componentWillLoad(): void {
+    async componentWillLoad(): Promise<void> {
         this.checkIfToggleDarkTheme();
+        await Settings.updateSettings();
     }
 
     /**

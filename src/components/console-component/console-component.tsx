@@ -2,7 +2,7 @@ import {Component, Element, forceUpdate, h, Method} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {Log} from './model';
 import moment from 'moment';
-import {ConsoleStorage} from '../../global/consoleStorage';
+import {SensorStorage} from '../../global/sensorStorage';
 import {ITempLog} from '../app-home/model';
 
 @Component({
@@ -15,7 +15,7 @@ export class ConsoleComponent {
 
   logs: Log[] = [];
   ionContent: HTMLIonContentElement;
-  storage: ConsoleStorage = new ConsoleStorage();
+  storage: SensorStorage = new SensorStorage();
 
   async componentWillLoad(): Promise<void> {
     const logs = await this.storage.getErrors();

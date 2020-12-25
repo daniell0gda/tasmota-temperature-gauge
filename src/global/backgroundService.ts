@@ -5,7 +5,6 @@ import {AppSettings} from './settings';
 import {filter, takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {NotificationService} from './notificationService';
-import {ConsoleStorage} from './consoleStorage';
 
 const {App, BackgroundTask} = Plugins;
 
@@ -16,7 +15,6 @@ export class BackgroundService {
   killReading$: Subject<boolean> = new Subject<boolean>();
   notificationService: NotificationService = new NotificationService();
   stateActive: boolean = true;
-  storage: ConsoleStorage = new ConsoleStorage();
 
   constructor() {
     this.tempReaderService.checkEvery = 30000;
@@ -60,14 +58,9 @@ export class BackgroundService {
     ).subscribe({
       next: async (temp: number) => {
         this.keeper.tryToggleDevice(temp);
-        await this.storage.store({
-          temp: temp,
-          date: new Date()
-        });
         await this.notificationService.sendNotificationIfNecessary(temp, this.settings);
       },
-      error: async (msg: string) => {
-        await this.storage.storeError(msg, new Date());
+      error: async () => {
 
         if (!this.stateActive) {
           setTimeout(() => {

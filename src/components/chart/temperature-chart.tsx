@@ -1,8 +1,10 @@
 import {Component, Element, h, Host, Method, Prop} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
 
-import {ConsoleStorage} from '../../global/consoleStorage';
+import {SensorStorage} from '../../global/sensorStorage';
 import ApexCharts from 'apexcharts';
+// tslint:disable-next-line:no-duplicate-imports
+import { ApexOptions } from 'apexcharts';
 
 @Component({
   tag: 'temperature-chart',
@@ -13,8 +15,8 @@ export class TemperatureChart {
   @Prop() _temps: string = '';
   @Prop() _min: number = 10;
   @Prop() _max: number = 30;
-  chartData: number[][] = [];
-  private storage: ConsoleStorage = new ConsoleStorage();
+  chartData: [number, (number | null)][] = [];
+  private storage: SensorStorage = new SensorStorage();
   private chartDivElement: HTMLDivElement | undefined;
   private chartScaleDivElement: HTMLDivElement | undefined;
   private mainChart:ApexCharts;
@@ -23,38 +25,24 @@ export class TemperatureChart {
   async componentWillLoad(): Promise<void> {
     const logs = await this.storage.getTemperatures();
     for (const log of logs) {
-      const point = [log.date.getTime(), log.temp];
-      this.chartData.push(point);
+
+      this.chartData.push([log.date, log.temp]);
     }
   }
 
   async componentDidLoad(): Promise<void> {
 
-   setTimeout(async()=>{
-     await this.setChartOptions(this.chartData);
-     await this.setChartScale(this.chartData);
-   });
+    await this.setMainChart(this.chartData);
+    await this.setChartScale(this.chartData);
   }
 
   componentDidUnload(): void {
 
   }
-
   render(): any {
     return <Host
 
     >
-      <apex-chart
-        type="bar"
-        series={[{
-          name: 'sales',
-          data: [30, 40, 35, 50, 49, 60, 70, 91, 125]
-        }]}
-        options={{
-          xaxis: {
-            categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999]
-          }
-        }}/>
       <div id="abc" ref={(el: HTMLDivElement | undefined) => this.chartDivElement = el as HTMLDivElement}/>
       <div id="abcc" ref={(el: HTMLDivElement | undefined) => this.chartScaleDivElement = el as HTMLDivElement}/>
     </Host>;
@@ -73,8 +61,8 @@ export class TemperatureChart {
     }]);
   }
 
-  private async setChartOptions(chartData: number[][]): Promise<void> {
-    let options = {
+  private async setMainChart(chartData: [number, (number | null)][]): Promise<void> {
+    let options:ApexOptions = {
       series: [{
         data: chartData
       }],
@@ -107,8 +95,8 @@ export class TemperatureChart {
     this.mainChart = new ApexCharts(this.chartDivElement, options);
     await this.mainChart.render();
   }
-  private  async setChartScale(chartData: number[][]): Promise<void> {
-    const optionsLine = {
+  private  async setChartScale(chartData: [number, (number | null)][]): Promise<void> {
+    const optionsLine:ApexOptions = {
       series: [{
         data: chartData
       }],

@@ -4,6 +4,7 @@ import {ISensorResponse} from '../components/app-home/model';
 import {fromFetch} from 'rxjs/fetch';
 import {catchError, exhaustMap, filter, map, mergeMap, switchMap, takeUntil, tap} from 'rxjs/operators';
 import urljoin from 'url-join';
+import {SensorStorage} from './sensorStorage';
 
 export class TempReaderService {
 
@@ -14,6 +15,7 @@ export class TempReaderService {
   tempAddress: string = '';
   checkEvery: number = 2000;
   lastReading: number = 0;
+  storage: SensorStorage = new SensorStorage();
 
   constructor() {
     this.sensorStateChanged = new Subject();
@@ -66,9 +68,11 @@ export class TempReaderService {
         // mode: 'no-cors'
       }
     ).pipe(
-      catchError((error: any) => {
+      catchError(async (error: any) => {
         console.error(error);
-        return throwError(['There is a problem with polling request (network problem).', error].join('; '));
+        const msg = ['There is a problem with polling request (network problem).', error].join('; ');
+        await this.storage.storeError(msg, new Date());
+        return throwError(msg);
       }),
       switchMap((response: Response) => {
 
@@ -92,8 +96,12 @@ export class TempReaderService {
       }),
       map((response: ISensorResponse) => response.StatusSNS.DS18B20.Temperature),
       takeUntil(this.killReading$),
-      tap((value: number) => {
+      tap(async (value: number) => {
         this.lastReading = value;
+        await this.storage.store({
+          temp: value,
+          date: Date.now()
+        });
       })
     );
   };

@@ -2,8 +2,8 @@ import {Component, Element, Event, EventEmitter, forceUpdate, h, Prop} from '@st
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {fromEvent, Observable} from 'rxjs';
 import {debounceTime, distinctUntilChanged, filter, map} from 'rxjs/operators';
-import {AppSettings} from '../../global/settings';
 import {ToggleChangeEventDetail} from '@ionic/core';
+import {Settings} from '../my-app/settings';
 
 @Component({
   tag: 'app-settings'
@@ -16,7 +16,7 @@ export class AppSettingsComponent {
   @Prop() val: number;
 
   settingPrefixKey: string = 'sonoff-th10-temp-url-address';
-  settings: AppSettings = new AppSettings();
+
   private urlInput: HTMLIonInputElement;
   private minTempInput: HTMLIonInputElement;
   private maxTempInput: HTMLIonInputElement;
@@ -24,8 +24,7 @@ export class AppSettingsComponent {
   private addressCorrect: boolean = true;
 
   async componentWillLoad(): Promise<void> {
-    await this.settings.updateSettings();
-    this.checkUrl(this.settings.urlValue);
+    this.checkUrl(Settings.urlValue);
   }
 
   componentDidRender(): void {
@@ -34,20 +33,20 @@ export class AppSettingsComponent {
     this.watchInputChange(this.urlInput).subscribe((value: string) => {
 
       if (this.checkUrl(value) || !value) {
-        this.settings.urlValue = value;
+        Settings.urlValue = value;
         this.emitSettings();
       }
       forceUpdate(this.el);
     });
 
     this.watchInputChange(this.minTempInput).subscribe((value: string) => {
-      this.settings.minTemp = +value;
+      Settings.minTemp = +value;
       this.emitSettings();
 
     });
 
     this.watchInputChange(this.maxTempInput).subscribe((value: string) => {
-      this.settings.maxTemp = +value;
+      Settings.maxTemp = +value;
 
       this.emitSettings();
     });
@@ -63,20 +62,20 @@ export class AppSettingsComponent {
             {this.addressCorrect ? 'Http address' : 'Http address - Use something like http://192.168.3.94/'}
           </ion-label>
           <ion-input type="url" inputmode="url" placeholder="Http or Https.." ref={(el: HTMLIonInputElement) => this.urlInput = el as any}
-                     value={this.settings.urlValue}/>
+                     value={Settings.urlValue}/>
         </ion-item>
         <ion-item>
           <ion-label position="stacked">Min temp</ion-label>
-          <ion-input type="number" ref={(el: HTMLIonInputElement) => this.minTempInput = el as any} value={this.settings.minTemp}/>
+          <ion-input type="number" ref={(el: HTMLIonInputElement) => this.minTempInput = el as any} value={Settings.minTemp}/>
         </ion-item>
         <ion-item>
           <ion-label position="stacked">Max temp</ion-label>
-          <ion-input type="number" ref={(el: HTMLIonInputElement) => this.maxTempInput = el as any} value={this.settings.maxTemp}/>
+          <ion-input type="number" ref={(el: HTMLIonInputElement) => this.maxTempInput = el as any} value={Settings.maxTemp}/>
         </ion-item>
         <ion-item>
           <ion-label position="stacked">Use as a Thermostat</ion-label>
           <ion-toggle
-            checked={this.settings.useAsThermostat as boolean}
+            checked={Settings.useAsThermostat as boolean}
             onIonChange={(ev: CustomEvent<ToggleChangeEventDetail>) => this.toggleChanged(ev.detail.checked)}/>
         </ion-item>
       </ion-list>
@@ -112,7 +111,7 @@ export class AppSettingsComponent {
   }
 
   private toggleChanged(detail: boolean): void {
-    this.settings.useAsThermostat = detail;
+    Settings.useAsThermostat = detail;
     this.emitSettings();
   }
 }

@@ -29,11 +29,11 @@ export class StorageService {
     const logs = await this.getData(this.errorStorageKey);
     logs.push({
       error: error,
-      date: when
+      date: when.getTime()
     });
 
     await Storage.set({
-      key: this.key,
+      key: this.errorStorageKey,
       value: JSON.stringify(logs)
     });
 

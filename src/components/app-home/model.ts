@@ -76,7 +76,7 @@ export interface SetPendingNotifications {
 
 export interface ITempLog {
   temp?: number;
-  date?: Date;
+  date?: number;
 
   error?: string;
 }
