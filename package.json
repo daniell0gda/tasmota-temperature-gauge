@@ -31,7 +31,7 @@
     "@capacitor/cli": "^2.4.5",
     "@capacitor/core": "^2.4.5",
     "@ionic/core": "^5.5.2",
-    "chart.js": "^2.9.4",
+    "apexcharts": "^3.23.0",
     "d3": "^5.16.0",
     "electron-compile": "^6.4.4",
     "electron-serve": "^0.4.1",
@@ -44,6 +44,7 @@
     "push.js": "^1.0.12",
     "react": "^16.14.0",
     "rxjs": "^6.6.3",
+    "stencil-apexcharts": "^2.1.1",
     "url-join": "^4.0.1"
   },
   "devDependencies": {
