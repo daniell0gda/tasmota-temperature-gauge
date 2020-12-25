@@ -39,7 +39,7 @@
     "flux-standard-action": "^2.1.1",
     "micromatch": "^4.0.2",
     "moment": "^2.29.1",
-    "node-notifier": "^6.0.0",
+    "node-notifier": "^8.0.1",
     "promisify": "0.0.3",
     "push.js": "^1.0.12",
     "react": "^16.14.0",
