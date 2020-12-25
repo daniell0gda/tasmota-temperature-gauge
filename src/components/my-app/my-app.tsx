@@ -1,5 +1,5 @@
-import { Component, Element, h, Listen } from '@stencil/core';
-import { HTMLStencilElement } from '@stencil/core/internal';
+import {Component, Element, h, Listen} from '@stencil/core';
+import {HTMLStencilElement} from '@stencil/core/internal';
 
 @Component({
     tag: 'my-app',
@@ -14,8 +14,6 @@ export class MyApp {
 
     componentWillLoad(): void {
         this.checkIfToggleDarkTheme();
-
-      (document.querySelector('#appSplashScreen') as HTMLElement).className += ' splashHide';
     }
 
     /**

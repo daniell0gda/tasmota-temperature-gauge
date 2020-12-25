@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0">
     <meta name="description"
           content="Welcome to the Ionic PWA Toolkit. You can use this starter to build fast PWAs using Ionic and Stencil!">
-    <meta name="theme-color" content="#16161d">
+    <meta content="#161or('#appSplashScreen'61d" name="theme-color">
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Ionic PWA">
@@ -24,14 +24,18 @@
     <link rel="manifest" href="/manifest.json">
 </head>
 
-<body>
-<div id="appSplashScreen" class="splash">
-    <div class="spinner">
-        <div class="double-bounce1"></div>
-        <div class="double-bounce2"></div>
-    </div>
-</div>
+<body >
+
+<script>
+  document.addEventListener('domReady', ()=>{
+    document.querySelector('.pulseContainer').remove();
+  });
+</script>
+
 <my-app></my-app>
+<splash class="pulseContainer">
+  <div class="pulse"/>
+</splash>
 
 </body>
 

@@ -27,3 +27,6 @@ UserInterfaceState.xcuserstate
 /Electron/app.js
 /Electron/createInstaller.js
 /Electron/main.js
+out/**
+Electron-windows/app/build/**
+releases/**
