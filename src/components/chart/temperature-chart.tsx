@@ -5,6 +5,7 @@ import {SensorStorage} from '../../global/sensorStorage';
 import ApexCharts from 'apexcharts';
 // tslint:disable-next-line:no-duplicate-imports
 import { ApexOptions } from 'apexcharts';
+import {data} from './seriesTestData';
 
 @Component({
   tag: 'temperature-chart',
@@ -18,9 +19,16 @@ export class TemperatureChart {
   chartData: [number, (number | null)][] = [];
   private storage: SensorStorage = new SensorStorage();
   private chartDivElement: HTMLDivElement | undefined;
-  private chartScaleDivElement: HTMLDivElement | undefined;
   private mainChart:ApexCharts;
-  private scaleChart:ApexCharts;
+  private series: ApexAxisChartSeries;
+  private chart: ApexChart;
+  private dataLabels: ApexDataLabels;
+  private markers: ApexMarkers;
+  private title: ApexTitleSubtitle;
+  private fill: ApexFill;
+  private yaxis: ApexYAxis;
+  private xaxis: ApexXAxis;
+  private tooltip: ApexTooltip;
 
   async componentWillLoad(): Promise<void> {
     const logs = await this.storage.getTemperatures();
@@ -33,7 +41,6 @@ export class TemperatureChart {
   async componentDidLoad(): Promise<void> {
 
     await this.setMainChart(this.chartData);
-    await this.setChartScale(this.chartData);
   }
 
   componentDidUnload(): void {
@@ -41,101 +48,113 @@ export class TemperatureChart {
   }
   render(): any {
     return <Host
-
+      class={{
+        'component-flex-container': true,
+        'height-100': true
+      }}
     >
-      <div id="abc" ref={(el: HTMLDivElement | undefined) => this.chartDivElement = el as HTMLDivElement}/>
-      <div id="abcc" ref={(el: HTMLDivElement | undefined) => this.chartScaleDivElement = el as HTMLDivElement}/>
+      <div ref={(el: HTMLDivElement | undefined) => this.chartDivElement = el as HTMLDivElement}/>
     </Host>;
   }
 
   @Method()
   async update(temp: number, date: Date): Promise<void> {
     this.chartData.push([date.getTime(), temp]);
-    this.mainChart.updateSeries([{
-      name: 'Sales',
-      data: this.chartData as any
-    }]);
-    this.scaleChart.updateSeries([{
-      name: 'Sales',
-      data: this.chartData as any
-    }]);
+    // this.mainChart.updateSeries([{
+    //   name: 'Temp.℃',
+    //   data: this.chartData as any
+    // }]);
+
   }
 
   private async setMainChart(chartData: [number, (number | null)][]): Promise<void> {
-    let options:ApexOptions = {
-      series: [{
-        data: chartData
-      }],
-      chart: {
-        id: 'chart2',
-        type: 'line',
-        height: 230,
-        toolbar: {
-          autoSelected: 'pan',
-          show: false
-        }
+    const styles = getComputedStyle(document.querySelector('body'));
+    const theme = document.querySelector('body').className.includes('dark') ? 'dark' : 'light';
+    const textColor = styles.getPropertyValue('--ion-text-color').trim();
+    let ts2 = 1484418600000;
+    let dates = [];
+    for (let i = 0; i < 120; i++) {
+      ts2 = ts2 + 86400000;
+      dates.push([ts2, data[i].value]);
+    }
+
+    this.series = [
+      {
+        name: 'Temp.℃',
+        data:  chartData
+      }
+    ];
+    this.chart = {
+      type: 'area',
+      stacked: false,
+      height: 500,
+      animations:{
+        enabled:false
       },
-      colors: ['#546E7A'],
-      stroke: {
-        width: 3
+      zoom: {
+        type: 'x',
+        enabled: true,
+        autoScaleYaxis: true
       },
-      dataLabels: {
-        enabled: false
-      },
-      fill: {
-        opacity: 1,
-      },
-      markers: {
-        size: 0
-      },
-      xaxis: {
-        type: 'datetime'
+      toolbar: {
+        autoSelected: 'zoom'
       }
     };
-    this.mainChart = new ApexCharts(this.chartDivElement, options);
-    await this.mainChart.render();
-  }
-  private  async setChartScale(chartData: [number, (number | null)][]): Promise<void> {
-    const optionsLine:ApexOptions = {
-      series: [{
-        data: chartData
-      }],
-      chart: {
-        id: 'chart1',
-        height: 130,
-        type: 'area',
-        brush: {
-          target: 'chart2',
-          enabled: true
-        },
-        selection: {
-          enabled: true,
-          // xaxis: {
-          //   min: new Date('19 Jun 2017').getTime(),
-          //   max: new Date('14 Aug 2017').getTime()
-          // }
-        },
-      },
-      colors: ['#008FFB'],
-      fill: {
-        type: 'gradient',
-        gradient: {
-          opacityFrom: 0.91,
-          opacityTo: 0.1,
-        }
-      },
-      xaxis: {
-        type: 'datetime',
-        tooltip: {
-          enabled: false
-        }
-      },
-      yaxis: {
-        tickAmount: 2
+    this.dataLabels = {
+      enabled: false
+    };
+    this.markers = {
+      size: 0
+    };
+    this.title = {
+      text: 'Temperatura w czasie',
+      align: 'left'
+    };
+    this.fill = {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        inverseColors: false,
+        opacityFrom: 0.5,
+        opacityTo: 0,
+        stops: [0, 90, 100]
       }
+    };
+    this.yaxis = {
+      title: {
+        text: 'Temp'
+      },
+    };
+    this.xaxis = {
+      type: 'datetime',
+      title: {
+        text: 'Kiedy'
+      },
+      labels: {
+        style: {
+          colors: textColor
+        }
+      },
+      tickPlacement: 'on'
+    };
+    this.tooltip = {
+      shared: false,
+      theme: theme
     };
 
-    this.scaleChart = new ApexCharts(this.chartScaleDivElement, optionsLine);
-    await this.scaleChart.render();
+    this.mainChart = new ApexCharts(this.chartDivElement, {
+      tooltip: this.tooltip,
+      xaxis: this.xaxis,
+      yaxis: this.yaxis,
+      fill: this.fill,
+      title: this.title,
+      markers: this.markers,
+      dataLabels: this.dataLabels,
+      chart: this.chart,
+      series: this.series,
+
+    } as ApexOptions);
+    await this.mainChart.render();
   }
+
 }
