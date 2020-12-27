@@ -5,6 +5,9 @@ import {AppSettings} from './settings';
 import {filter, takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {NotificationService} from './notificationService';
+import {Log} from '../components/console-component/model';
+import extend from 'lodash/extend';
+import {AndroidNotificationsService} from '../components/app-home/androidNotificationsService';
 
 const {App, BackgroundTask} = Plugins;
 
@@ -15,17 +18,28 @@ export class BackgroundService {
   killReading$: Subject<boolean> = new Subject<boolean>();
   notificationService: NotificationService = new NotificationService();
   stateActive: boolean = true;
+  consoleFeed$: Subject<Log> = new Subject<Log>();
+  androidNotification: AndroidNotificationsService = new AndroidNotificationsService();
 
   constructor() {
     this.tempReaderService.checkEvery = 30000;
   }
 
-  run(): void {
+  init(): void {
     App.addListener('appStateChange', async (state: AppState) => {
 
       this.stateActive = state.isActive;
 
+      await this.androidNotification.send('app state change', `app changed to: ${this.stateActive}`);
+
       if (!state.isActive) {
+
+        this.consoleFeed$.next(extend(new Log(), {
+          value: 'Switching to background',
+          type: 'INFO',
+          time: new Date()
+        } as Log));
+
         await this.readTemp();
 
         let taskId = BackgroundTask.beforeExit(async () => {
@@ -41,6 +55,11 @@ export class BackgroundService {
           });
         });
       } else {
+        this.consoleFeed$.next(extend(new Log(), {
+          value: 'Switching app to front',
+          type: 'INFO',
+          time: new Date()
+        } as Log));
         this.killReading$.next(true);
       }
     });
@@ -60,7 +79,12 @@ export class BackgroundService {
         this.keeper.tryToggleDevice(temp);
         await this.notificationService.sendNotificationIfNecessary(temp, this.settings);
       },
-      error: async () => {
+      error: async (err:string) => {
+        this.consoleFeed$.next(extend(new Log(), {
+          value: err,
+          type: 'ERROR',
+          time: new Date()
+        } as Log));
 
         if (!this.stateActive) {
           setTimeout(() => {

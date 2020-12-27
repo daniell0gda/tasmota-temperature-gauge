@@ -9,6 +9,7 @@ import {Subject} from 'rxjs';
 import {TempKeeper} from '../../global/tempKeeper';
 import {IPowerChangeResponse} from './model';
 import {Settings} from '../my-app/settings';
+import {BackgroundService} from '../../global/backgroundService';
 
 
 @Component({
@@ -34,10 +35,16 @@ export class AppHome {
   killReading$: Subject<boolean> = new Subject<boolean>();
   keeper: TempKeeper = new TempKeeper();
   devicePower: IPowerChangeResponse;
+  backgroundService:BackgroundService;
 
   private tempChart: HTMLTemperatureChartElement | undefined;
 
   componentWillLoad(): void {
+    this.backgroundService = new BackgroundService();
+    //TODO:
+    // check how to handle background stuff, does it make sense in this scenario
+    // this.backgroundService.init();
+
     const appSplashScreen = (document.querySelector('#appSplashScreen') as HTMLElement);
     if (appSplashScreen) {
       appSplashScreen.className += ' splashHide';
@@ -50,7 +57,11 @@ export class AppHome {
     await this.logInfoMsg('App started successfully. Waiting for sensor to get first data..');
     await this.notificationService.askForPermissions();
 
-    this.updateGauge();
+    this.backgroundService.consoleFeed$.subscribe(async (log:Log)=>{
+      await this.consoleElement.update(log);
+    });
+
+    await this.updateGauge();
 
     forceUpdate(this.el);
 

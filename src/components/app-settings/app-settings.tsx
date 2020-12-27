@@ -61,8 +61,12 @@ export class AppSettingsComponent {
           <ion-label position="stacked" color={this.addressCorrect ? '' : 'danger'}>
             {this.addressCorrect ? 'Http address' : 'Http address - Use something like http://192.168.3.94/'}
           </ion-label>
-          <ion-input type="url" inputmode="url" placeholder="Http or Https.." ref={(el: HTMLIonInputElement) => this.urlInput = el as any}
-                     value={Settings.urlValue}/>
+          <ion-input
+            type="url"
+            inputmode="url"
+            placeholder="Http or Https.."
+            ref={(el: HTMLIonInputElement) => this.urlInput = el as any}
+                     value={Settings.urlValue || 'http://'}/>
         </ion-item>
         <ion-item>
           <ion-label position="stacked">Min temp</ion-label>
