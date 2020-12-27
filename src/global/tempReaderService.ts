@@ -2,9 +2,10 @@ import {interval, NEVER, Observable, Subject, throwError} from 'rxjs';
 
 import {ISensorResponse} from '../components/app-home/model';
 import {fromFetch} from 'rxjs/fetch';
-import {catchError, exhaustMap, filter, map, mergeMap, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {catchError, exhaustMap, filter, map, mergeMap, startWith, switchMap, takeUntil, tap} from 'rxjs/operators';
 import urljoin from 'url-join';
 import {SensorStorage} from './sensorStorage';
+import {Settings} from '../components/my-app/settings';
 
 export class TempReaderService {
 
@@ -12,7 +13,6 @@ export class TempReaderService {
   reading$: Subject<boolean> = new Subject<boolean>();
   killReading$: Subject<boolean> = new Subject<boolean>();
 
-  tempAddress: string = '';
   checkEvery: number = 2000;
   lastReading: number = 0;
   storage: SensorStorage = new SensorStorage();
@@ -40,6 +40,7 @@ export class TempReaderService {
   private pollData(): Observable<number | void> {
     const extracted = (val: boolean) => {
       return val ? interval(this.checkEvery).pipe(
+        startWith(0),
         exhaustMap(() => this.readTemp())
       ) : NEVER;
     };
@@ -54,13 +55,13 @@ export class TempReaderService {
   private readonly readTemp = () => {
 //http://192.168.0.220/cm?cmnd=status%208
 
-    if (!this.tempAddress) {
+    if (!Settings.urlValue) {
       return throwError('No address for temperature reading. Go to settings.');
     }
 
     this.reading$.next(false);
 
-    const httpAddress = urljoin(this.tempAddress, '/cm?cmnd=status%208');
+    const httpAddress = urljoin(Settings.urlValue, '/cm?cmnd=status%208');
     return fromFetch(
       httpAddress,
       {

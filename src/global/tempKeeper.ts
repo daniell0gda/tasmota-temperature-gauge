@@ -1,27 +1,30 @@
-import {AppSettings} from './settings';
 import {fromFetch} from 'rxjs/fetch';
-import {catchError, exhaustMap, filter, map, mergeMap, switchMap, takeUntil, tap} from 'rxjs/operators';
-import {interval, Observable, of, Subject, throwError} from 'rxjs';
+import {catchError, exhaustMap, filter, map, mergeMap, startWith, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {interval, NEVER, Observable, of, Subject, throwError} from 'rxjs';
 import {IPowerChangeResponse, IPowerStatusResponse} from '../components/app-home/model';
 import urljoin from 'url-join';
+import {Settings} from '../components/my-app/settings';
 
 export class TempKeeper {
 
   currentTemp: number;
   checkEvery: number = 10000;
-  settings: AppSettings = new AppSettings();
   killReading$: Subject<boolean> = new Subject<boolean>();
   msgFeed: Subject<string> = new Subject<string>();
   lastStatus: IPowerChangeResponse;
 
   run(): Observable<IPowerChangeResponse> {
+    if (!Settings.useAsThermostat) {
+      return NEVER;
+    }
     return interval(this.checkEvery).pipe(
+      startWith(0),
       exhaustMap(() => this.tryToggleDevice(this.currentTemp))
     );
   }
 
   tryToggleDevice(currentTemp: number): Observable<IPowerChangeResponse> {
-    const {maxTemp} = this.settings;
+    const {maxTemp} = Settings;
     if (currentTemp < maxTemp) {
       return this.toggleDevice('Off');
     } else if (currentTemp + 0.5 > maxTemp) {
@@ -34,12 +37,14 @@ export class TempKeeper {
 
   private toggleDevice(to: 'On' | 'Off'): Observable<IPowerChangeResponse> {
 
-    const httpAddress = urljoin(this.settings.urlValue, `/cm?cmnd=Power%20${to}`);
+    const httpAddress = urljoin(Settings.urlValue, `/cm?cmnd=Power%20${to}`);
 
     return this.isDeviceTurnedOn().pipe(
       mergeMap((turnedOn: boolean) => {
         if ((to === 'On' && turnedOn) || (to === 'Off' && !turnedOn)) {
-          return of(this.lastStatus);
+          return of({
+            POWER: turnedOn ? 'ON' : 'OFF'
+          } as IPowerChangeResponse);
         }
         return this.callDeviceSetStatus(httpAddress, to);
       }),
@@ -98,7 +103,7 @@ export class TempKeeper {
   private isDeviceTurnedOn(): Observable<boolean> {
 //http://192.168.0.220/cm?cmnd=status%208
 
-    const url = this.settings.urlValue;
+    const url = Settings.urlValue;
     if (!url) {
       return throwError('No address for temperature reading. Go to settings.');
     }

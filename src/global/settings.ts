@@ -47,7 +47,7 @@ export class AppSettings {
 
   get useAsThermostat(): boolean {
     const value = this.settings?.useAsThermostat as any;
-    return value === 'true';
+    return value === 'true' || value===true;
   }
 
   set useAsThermostat(value: boolean) {

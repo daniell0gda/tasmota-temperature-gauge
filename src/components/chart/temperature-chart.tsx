@@ -1,11 +1,9 @@
 import {Component, Element, h, Host, Method, Prop} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
-
+import moment from 'moment';
 import {SensorStorage} from '../../global/sensorStorage';
-import ApexCharts from 'apexcharts';
 // tslint:disable-next-line:no-duplicate-imports
-import { ApexOptions } from 'apexcharts';
-import {data} from './seriesTestData';
+import ApexCharts, {ApexOptions} from 'apexcharts';
 
 @Component({
   tag: 'temperature-chart',
@@ -19,7 +17,7 @@ export class TemperatureChart {
   chartData: [number, (number | null)][] = [];
   private storage: SensorStorage = new SensorStorage();
   private chartDivElement: HTMLDivElement | undefined;
-  private mainChart:ApexCharts;
+  private mainChart: ApexCharts;
   private series: ApexAxisChartSeries;
   private chart: ApexChart;
   private dataLabels: ApexDataLabels;
@@ -31,11 +29,7 @@ export class TemperatureChart {
   private tooltip: ApexTooltip;
 
   async componentWillLoad(): Promise<void> {
-    const logs = await this.storage.getTemperatures();
-    for (const log of logs) {
-
-      this.chartData.push([log.date, log.temp]);
-    }
+    await this.loadDataFromStorage();
   }
 
   async componentDidLoad(): Promise<void> {
@@ -46,6 +40,7 @@ export class TemperatureChart {
   componentDidUnload(): void {
 
   }
+
   render(): any {
     return <Host
       class={{
@@ -54,47 +49,54 @@ export class TemperatureChart {
       }}
     >
       <div ref={(el: HTMLDivElement | undefined) => this.chartDivElement = el as HTMLDivElement}/>
+      <ion-button onClick={() => this.refreshView(true)}>Refresh View</ion-button>
     </Host>;
   }
 
   @Method()
   async update(temp: number, date: Date): Promise<void> {
-    this.chartData.push([date.getTime(), temp]);
-    // this.mainChart.updateSeries([{
-    //   name: 'Temp.℃',
-    //   data: this.chartData as any
-    // }]);
 
+
+    const diff = moment(date).diff(this.chartData[this.chartData.length - 1], 'minutes');
+    if (diff >= 30 || this.chartData.length === 0) {
+      this.chartData.push([date.getTime(), temp]);
+      await this.refreshView();
+    }
   }
 
   private async setMainChart(chartData: [number, (number | null)][]): Promise<void> {
     const styles = getComputedStyle(document.querySelector('body'));
     const theme = document.querySelector('body').className.includes('dark') ? 'dark' : 'light';
     const textColor = styles.getPropertyValue('--ion-text-color').trim();
-    let ts2 = 1484418600000;
-    let dates = [];
-    for (let i = 0; i < 120; i++) {
-      ts2 = ts2 + 86400000;
-      dates.push([ts2, data[i].value]);
-    }
 
     this.series = [
       {
         name: 'Temp.℃',
-        data:  chartData
+        data: chartData
       }
     ];
     this.chart = {
       type: 'area',
       stacked: false,
       height: 500,
-      animations:{
-        enabled:false
+      animations: {
+        enabled: false
       },
       zoom: {
         type: 'x',
         enabled: true,
-        autoScaleYaxis: true
+        autoScaleYaxis: true,
+        zoomedArea: {
+          fill: {
+            color: '#90CAF9',
+            opacity: 0.4
+          },
+          stroke: {
+            color: '#0D47A1',
+            opacity: 0.4,
+            width: 1
+          }
+        }
       },
       toolbar: {
         autoSelected: 'zoom'
@@ -156,5 +158,24 @@ export class TemperatureChart {
     } as ApexOptions);
     await this.mainChart.render();
   }
+  private async loadDataFromStorage():Promise<void>{
+    this.chartData = [];
 
+    const logs = await this.storage.getTemperatures();
+    for (const log of logs) {
+
+      this.chartData.push([log.date, log.temp]);
+    }
+  }
+  private async refreshView(refreshAll: boolean = false): Promise<void> {
+    if (refreshAll) {
+      await this.loadDataFromStorage();
+    }
+
+
+    this.mainChart.appendSeries([{
+      name: 'Temp.℃',
+      data: this.chartData,
+    }], false);
+  }
 }

@@ -57,11 +57,6 @@ export class AppHome {
     this.domReady.emit();
   }
 
-  componentDidUnload(): void {
-    this.killReading$.next();
-    this.tempReaderService.killReading();
-  }
-
   render(): any[] {
     return [
       <ion-content>
@@ -123,6 +118,10 @@ export class AppHome {
       </ion-content>
     ];
   }
+  componentDidUnload(): void {
+    this.killReading$.next();
+    this.tempReaderService.killReading();
+  }
 
   private async logInfoMsg(msg: string): Promise<void> {
     const log = new Log();
@@ -133,6 +132,8 @@ export class AppHome {
   }
 
   private startReadingTemp(): void {
+
+    let readingStarted = false;
     let counter: number = 1;
     this.tempReaderService.getCurrentTemperature().pipe(
       filter((val: number | void) => !!val),
@@ -167,6 +168,11 @@ export class AppHome {
         await this.tempChart.update(temp, new Date());
         await this.updateGauge();
 
+        if (!readingStarted) {
+          readingStarted = true;
+          this.manageDevice();
+        }
+
         forceUpdate(this.el);
       },
       error: async (msg: string | Error) => {
@@ -180,7 +186,7 @@ export class AppHome {
       }
     });
 
-    this.manageDevice();
+
 
     this.keeper.msgFeed.subscribe(async (msg: string) => {
       await this.logInfoMsg(msg);
@@ -213,8 +219,6 @@ export class AppHome {
   }
 
   private async onSettingChanged(): Promise<void> {
-    this.tempReaderService.tempAddress = Settings.urlValue;
-
     this.startReadingTemp();
   }
 
