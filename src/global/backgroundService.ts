@@ -17,7 +17,7 @@ export class BackgroundService {
   settings: AppSettings = new AppSettings();
   killReading$: Subject<boolean> = new Subject<boolean>();
   notificationService: NotificationService = new NotificationService();
-  stateActive: boolean = true;
+  appInForeground: boolean = true;
   consoleFeed$: Subject<Log> = new Subject<Log>();
   androidNotification: AndroidNotificationsService = new AndroidNotificationsService();
 
@@ -28,9 +28,9 @@ export class BackgroundService {
   init(): void {
     App.addListener('appStateChange', async (state: AppState) => {
 
-      this.stateActive = state.isActive;
+      this.appInForeground = state.isActive;
 
-      await this.androidNotification.send('app state change', `app changed to: ${this.stateActive}`);
+      await this.androidNotification.send('app state change', `app changed to: ${this.appInForeground}`);
 
       if (!state.isActive) {
 
@@ -86,7 +86,7 @@ export class BackgroundService {
           time: new Date()
         } as Log));
 
-        if (!this.stateActive) {
+        if (!this.appInForeground) {
           setTimeout(() => {
             this.readTemp();
           }, 3000);

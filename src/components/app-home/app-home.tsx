@@ -10,7 +10,7 @@ import {TempKeeper} from '../../global/tempKeeper';
 import {IPowerChangeResponse} from './model';
 import {Settings} from '../my-app/settings';
 import {BackgroundService} from '../../global/backgroundService';
-
+import {Plugins} from '@capacitor/core';
 
 @Component({
   tag: 'app-home',
@@ -35,7 +35,7 @@ export class AppHome {
   killReading$: Subject<boolean> = new Subject<boolean>();
   keeper: TempKeeper = new TempKeeper();
   devicePower: IPowerChangeResponse;
-  backgroundService:BackgroundService;
+  backgroundService: BackgroundService;
 
   private tempChart: HTMLTemperatureChartElement | undefined;
 
@@ -43,7 +43,7 @@ export class AppHome {
     this.backgroundService = new BackgroundService();
     //TODO:
     // check how to handle background stuff, does it make sense in this scenario
-    // this.backgroundService.init();
+    this.backgroundService.init();
 
     const appSplashScreen = (document.querySelector('#appSplashScreen') as HTMLElement);
     if (appSplashScreen) {
@@ -57,7 +57,7 @@ export class AppHome {
     await this.logInfoMsg('App started successfully. Waiting for sensor to get first data..');
     await this.notificationService.askForPermissions();
 
-    this.backgroundService.consoleFeed$.subscribe(async (log:Log)=>{
+    this.backgroundService.consoleFeed$.subscribe(async (log: Log) => {
       await this.consoleElement.update(log);
     });
 
@@ -66,6 +66,8 @@ export class AppHome {
     forceUpdate(this.el);
 
     this.domReady.emit();
+
+    await this.registerPhoneAppOnlyPlugins();
   }
 
   render(): any[] {
@@ -129,9 +131,18 @@ export class AppHome {
       </ion-content>
     ];
   }
+
   componentDidUnload(): void {
     this.killReading$.next();
     this.tempReaderService.killReading();
+  }
+
+  private async registerPhoneAppOnlyPlugins(): Promise<void> {
+    try {
+      await Plugins.KeepAwake.keepAwake();
+    } catch (e) {
+      console.warn([`Not valid on phone register feature`, e.toString()].join('\n'));
+    }
   }
 
   private async logInfoMsg(msg: string): Promise<void> {
@@ -147,6 +158,7 @@ export class AppHome {
     let readingStarted = false;
     let counter: number = 1;
     this.tempReaderService.getCurrentTemperature().pipe(
+      filter(() => this.backgroundService.appInForeground),
       filter((val: number | void) => !!val),
       takeUntil(this.killReading$)
     ).subscribe({
@@ -198,7 +210,6 @@ export class AppHome {
     });
 
 
-
     this.keeper.msgFeed.subscribe(async (msg: string) => {
       await this.logInfoMsg(msg);
     });
@@ -207,7 +218,9 @@ export class AppHome {
   }
 
   private manageDevice(): void {
-    this.keeper.run().pipe().subscribe({
+    this.keeper.run().pipe(
+      filter(() => this.backgroundService.appInForeground)
+    ).subscribe({
       next: async (devicePower: IPowerChangeResponse) => {
         this.devicePower = devicePower;
         forceUpdate(this.el);
@@ -225,7 +238,11 @@ export class AppHome {
   }
 
   private async updateGauge(): Promise<void> {
+    if (!this.backgroundService.appInForeground) {
+      return;
+    }
     const sensor = this.el.querySelector<HTMLSensorTempElement>(`sensor-temp`);
+
     await sensor.update();
   }
 

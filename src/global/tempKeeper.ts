@@ -27,11 +27,19 @@ export class TempKeeper {
     const {maxTemp} = Settings;
     if (currentTemp < maxTemp) {
       return this.toggleDevice('Off');
-    } else if (currentTemp + 0.5 > maxTemp) {
+    } else if (currentTemp <= maxTemp-0.2) {
       return this.toggleDevice('On');
     }
     //TODO: heating?
+    /*
+    Another version?
+    if (currentTemp < maxTemp+0.2) {
+      return this.toggleDevice('Off');
+    } else if (currentTemp <= minTemp+0.5) {
+      return this.toggleDevice('On');
+    }
 
+     */
     return of(this.lastStatus);
   }
 
