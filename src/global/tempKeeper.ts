@@ -25,9 +25,9 @@ export class TempKeeper {
 
   tryToggleDevice(currentTemp: number): Observable<IPowerChangeResponse> {
     const {maxTemp} = Settings;
-    if (currentTemp < maxTemp) {
+    if (currentTemp <= maxTemp) {
       return this.toggleDevice('Off');
-    } else if (currentTemp <= maxTemp-0.2) {
+    } else if (currentTemp >= maxTemp) {
       return this.toggleDevice('On');
     }
     //TODO: heating?
