@@ -1,8 +1,8 @@
-import {interval, NEVER, Observable, Subject, throwError} from 'rxjs';
+import {interval, Observable, Subject, throwError} from 'rxjs';
 
 import {ISensorResponse} from '../components/app-home/model';
 import {fromFetch} from 'rxjs/fetch';
-import {catchError, exhaustMap, filter, map, mergeMap, startWith, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {catchError, exhaustMap, filter, map, startWith, switchMap, takeUntil, takeWhile, tap} from 'rxjs/operators';
 import urljoin from 'url-join';
 import {SensorStorage} from './sensorStorage';
 import {Settings} from '../components/my-app/settings';
@@ -38,16 +38,14 @@ export class TempReaderService {
   }
 
   private pollData(): Observable<number | void> {
-    const extracted = (val: boolean) => {
-      return val ? interval(this.checkEvery).pipe(
-        startWith(0),
-        exhaustMap(() => this.readTemp())
-      ) : NEVER;
-    };
 
     return this.reading$.pipe(
-      mergeMap((val: boolean) => {
-        return extracted(val);
+      exhaustMap((shouldRead: boolean) => {
+        return interval(this.checkEvery).pipe(
+          takeWhile(() => shouldRead),
+          startWith(0),
+          switchMap(() => this.readTemp())
+        );
       })
     );
   }
@@ -81,7 +79,7 @@ export class TempReaderService {
           return response.json();
         } else {
           // Server is returning a status requiring the client to try something else.
-          return throwError(`Sonoff doesn't response..`);
+          return throwError([`Sonoff doesn't response..`, response.json()].join('\n'));
         }
       }),
 
@@ -105,6 +103,6 @@ export class TempReaderService {
         });
       })
     );
-  };
+  }
 }
 

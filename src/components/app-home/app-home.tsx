@@ -1,7 +1,7 @@
 import {Component, Element, Event, EventEmitter, forceUpdate, h} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {TempReaderService} from '../../global/tempReaderService';
-import {filter, takeUntil} from 'rxjs/operators';
+import {filter, takeUntil, takeWhile} from 'rxjs/operators';
 
 import {Log} from '../console-component/model';
 import {NotificationService} from '../../global/notificationService';
@@ -39,6 +39,9 @@ export class AppHome {
 
   private tempChart: HTMLTemperatureChartElement | undefined;
 
+  constructor() {
+
+  }
   componentWillLoad(): void {
     this.backgroundService = new BackgroundService();
     //TODO:
@@ -49,6 +52,12 @@ export class AppHome {
     if (appSplashScreen) {
       appSplashScreen.className += ' splashHide';
     }
+
+    this.manageDevice();
+    this.startReadingTemp();
+    this.keeper.msgFeed.subscribe(async (msg: string) => {
+      await this.logInfoMsg(msg);
+    });
   }
 
   async componentDidLoad(): Promise<void> {
@@ -60,6 +69,8 @@ export class AppHome {
     this.backgroundService.consoleFeed$.subscribe(async (log: Log) => {
       await this.consoleElement.update(log);
     });
+
+    this.tempReaderService.startReadingTemp();
 
     await this.updateGauge();
 
@@ -73,7 +84,7 @@ export class AppHome {
   render(): any[] {
     return [
       <ion-content>
-        <ion-tabs>
+        <ion-tabs onIonTabsDidChange={(ev: CustomEvent<{ tab: string }>) => this.tabChanged(ev)}>
           <ion-tab tab="abc">
             <sensor-temp
               class={!this.sensorOnline ? 'inactive' : ''}
@@ -173,6 +184,7 @@ export class AppHome {
 
         if (counter % 60 === 0) {
           await this.logInfoMsg(`Current temperature: ${temp}`);
+          await this.notificationService.sendNotificationIfNecessary(this.currentTemp, Settings, this.consoleElement);
         }
 
         this.sensorOnline = true;
@@ -186,14 +198,11 @@ export class AppHome {
           await this.logInfoMsg('Temperature back in range');
         }
 
-        await this.notificationService.sendNotificationIfNecessary(this.currentTemp, Settings, this.consoleElement);
-
-        await this.tempChart.update(temp, new Date());
         await this.updateGauge();
 
         if (!readingStarted) {
           readingStarted = true;
-          this.manageDevice();
+          this.keeper.reading$.next(Settings.useAsThermostat);
         }
 
         forceUpdate(this.el);
@@ -209,16 +218,11 @@ export class AppHome {
       }
     });
 
-
-    this.keeper.msgFeed.subscribe(async (msg: string) => {
-      await this.logInfoMsg(msg);
-    });
-
-    this.tempReaderService.startReadingTemp();
   }
 
   private manageDevice(): void {
     this.keeper.run().pipe(
+      takeWhile(() => Settings.useAsThermostat),
       filter(() => this.backgroundService.appInForeground)
     ).subscribe({
       next: async (devicePower: IPowerChangeResponse) => {
@@ -232,6 +236,7 @@ export class AppHome {
 
         setTimeout(() => {
           this.manageDevice();
+          this.keeper.reading$.next(true);
         }, 30000);
       }
     });
@@ -247,7 +252,7 @@ export class AppHome {
   }
 
   private async onSettingChanged(): Promise<void> {
-    this.startReadingTemp();
+
   }
 
   private async showError(msg: string | Error): Promise<any> {
@@ -256,6 +261,20 @@ export class AppHome {
     log.type = 'ERROR';
     log.value = msg instanceof Error ? msg.message : msg;
     await this.consoleElement.update(log);
+  }
+
+  private async tabChanged(ev: CustomEvent<{ tab: string }>): Promise<void> {
+    if (ev.detail.tab === 'chart') {
+      await this.tempChart.viewOn();
+    } else {
+      await this.tempChart.viewOff();
+    }
+
+    if (ev.detail.tab === 'console') {
+      await this.consoleElement.viewOn();
+    } else {
+      await this.consoleElement.viewOff();
+    }
   }
 }
 

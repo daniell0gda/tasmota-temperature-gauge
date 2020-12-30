@@ -5,6 +5,8 @@ import moment from 'moment';
 import {SensorStorage} from '../../global/sensorStorage';
 import {ITempLog} from '../app-home/model';
 import {toastController} from '@ionic/core';
+import {iif, interval, NEVER, Subject} from 'rxjs';
+import {mergeMap, startWith, takeUntil, takeWhile} from 'rxjs/operators';
 
 @Component({
   tag: 'console-component',
@@ -18,6 +20,10 @@ export class ConsoleComponent {
   ionContent: HTMLIonContentElement;
   storage: SensorStorage = new SensorStorage();
   keepingDown: boolean = true;
+  shouldRefresh: boolean = false;
+
+  private trimConsole$: Subject<boolean> = new Subject<boolean>();
+  private componentIsDead$: Subject<boolean> = new Subject<boolean>();
 
   async componentWillLoad(): Promise<void> {
     const logs = await this.storage.getErrors();
@@ -28,27 +34,54 @@ export class ConsoleComponent {
       return newLog;
     });
 
-    this.trimVisibleLogs();
+    this.trimConsole$.pipe(
+      mergeMap((shouldRefresh: boolean) => {
+        return iif(() => shouldRefresh, interval(3000).pipe(
+          takeWhile(() => this.shouldRefresh),
+          startWith(0),
+        ), NEVER);
+      }),
+      takeUntil(this.componentIsDead$)
+    ).subscribe(() => {
+      this.trimVisibleLogs();
+      forceUpdate(this.el);
+    });
   }
 
   async componentDidLoad(): Promise<void> {
-
+    this.componentIsDead$.next(true);
   }
 
   @Method()
   async update(log: Log): Promise<void> {
 
-    this.trimVisibleLogs();
-
     this.logs.push(log);
 
-    forceUpdate(this.el);
-
-    if (this.keepingDown) {
-      setTimeout(async () => {
-        await this.ionContent.scrollToBottom(300);
-      });
+    if (this.shouldRefresh) {
+      forceUpdate(this.el);
+      if (this.keepingDown) {
+        setTimeout(async () => {
+          await this.ionContent.scrollToBottom(300);
+        });
+      }
     }
+
+  }
+
+  @Method()
+  async viewOn(): Promise<void> {
+    this.shouldRefresh = true;
+    this.trimConsole$.next(true);
+
+    setTimeout(()=>{
+      forceUpdate(this.el);
+    });
+  }
+
+  @Method()
+  async viewOff(): Promise<void> {
+    this.shouldRefresh = false;
+    this.trimConsole$.next(false);
   }
 
   render(): any[] {
@@ -114,6 +147,9 @@ export class ConsoleComponent {
   }
 
   private async onScrollEnd(): Promise<void> {
+    if (!this.keepingDown) {
+      return;
+    }
     const scrollElement = await this.ionContent.getScrollElement();
     const scrollHeight = scrollElement.scrollHeight - scrollElement.clientHeight;
 

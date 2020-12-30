@@ -14,6 +14,8 @@ export namespace Components {
     }
     interface ConsoleComponent {
         "update": (log: Log) => Promise<void>;
+        "viewOff": () => Promise<void>;
+        "viewOn": () => Promise<void>;
     }
     interface MyApp {
     }
@@ -27,7 +29,8 @@ export namespace Components {
         "_max": number;
         "_min": number;
         "_temps": string;
-        "update": (temp: number, date: Date) => Promise<void>;
+        "viewOff": () => Promise<void>;
+        "viewOn": () => Promise<void>;
     }
     interface ThermometerGauge {
         "update": (current: number, min: number, max: number) => Promise<void>;
