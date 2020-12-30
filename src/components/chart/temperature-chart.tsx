@@ -9,7 +9,7 @@ import {ChartOptions} from 'chart.js';
 import {iif, interval, NEVER, Subject} from 'rxjs';
 import {mergeMap, startWith, switchMap, takeUntil, takeWhile} from 'rxjs/operators';
 import {fromPromise} from 'rxjs/internal-compatibility';
-import {mean, round, last, first, max, min} from 'lodash';
+import {first, last, max, mean, min, round} from 'lodash';
 import {Color} from '@ionic/core';
 
 @Component({
@@ -156,6 +156,7 @@ export class TemperatureChart {
       toolbar: {
         autoSelected: 'zoom'
       },
+
     };
     this.dataLabels = {
       enabled: false,
@@ -240,7 +241,11 @@ export class TemperatureChart {
       dataLabels: this.dataLabels,
       chart: this.chart,
       series: this.series,
-      annotations: annotations
+      annotations: annotations,
+      noData: {
+        text: 'Waiting for temperatures...',
+        color: textColor,
+      }
     } as ApexOptions);
     await this.mainChart.render();
   }
@@ -266,10 +271,12 @@ export class TemperatureChart {
       await this.loadAllDataFromStorage();
     }
 
-    setTimeout(async() => {
+    setTimeout(async () => {
       await this.updateSeries();
 
-      this.zoomWithMoment();
+      if (this.tickSize !== 'all') {
+        this.zoomWithMoment();
+      }
     });
 
     forceUpdate(this.el);
@@ -304,9 +311,20 @@ export class TemperatureChart {
   private async setTickSizeAll(): Promise<void> {
     this.tickSize = 'all';
 
-    await this.loadAllDataFromStorage();
-    await this.updateSeries();
+    this.chartData = [];
+    this.mainChart.updateSeries([{
+      name: 'Temp.℃',
+      data: this.chartData,
+    }], false);
+
     forceUpdate(this.el);
+    setTimeout(async () => {
+      await this.loadAllDataFromStorage();
+      this.mainChart.updateSeries([{
+        name: 'Temp.℃',
+        data: this.chartData,
+      }], false);
+    });
   }
 
   private async calculateMeanTemps(unit: 'hour' | 'day' | 'week'): Promise<void> {
@@ -320,8 +338,6 @@ export class TemperatureChart {
       if (!hook) {
         hook = log.date;
       }
-
-      moment(log.date).minute(0).second(0);
 
       const sameHour = moment(log.date).isSame(hook, unit);
       const newDate = moment(log.date).minute(0).second(0).toDate().getTime();
@@ -338,6 +354,7 @@ export class TemperatureChart {
     const newDate = moment(hook).minute(0).second(0).toDate().getTime();
     this.chartData.push([newDate, round(mean(temps), 2)]);
   }
+
   private async updateSeries(): Promise<void> {
     this.mainChart.updateSeries([{
       name: 'Temp.℃',
@@ -346,6 +363,7 @@ export class TemperatureChart {
 
     await this.setNewMinMaxY();
   }
+
   private chipColorGet(tick: 'hour' | 'day' | 'week' | 'all'): Color | undefined {
     if (tick === this.tickSize) {
       return 'primary';
@@ -367,7 +385,7 @@ export class TemperatureChart {
   }
 
   private async setNewMinMaxY(): Promise<void> {
-    const temps = this.chartData.map((val: [number, (number | null)])=> val[1]);
+    const temps = this.chartData.map((val: [number, (number | null)]) => val[1]);
     const minTemp = min(temps);
     const maxTemp = max(temps);
 
