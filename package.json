@@ -80,7 +80,7 @@
     "@types/lodash": "^4.14.165",
     "@types/redux": "^3.6.0",
     "@types/redux-orm": "^0.13.6",
-    "electron": "8.2.0",
+    "electron": "8.5.2",
     "electron-builder": "^22.9.1",
     "electron-forge": "^5.2.4",
     "electron-packager": "^15.2.0",
