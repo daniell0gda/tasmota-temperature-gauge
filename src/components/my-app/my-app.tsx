@@ -1,8 +1,9 @@
 import {Component, Element, h, Listen} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
-import {Settings} from './settings';
+import {AppStorage, Settings} from './settings';
 import {AppThemeSetting} from '../app-settings/model';
 import {ISettings} from '../../global/settings';
+import {alertController} from '@ionic/core';
 
 @Component({
   tag: 'my-app',
@@ -16,11 +17,12 @@ export class MyApp {
   @Element() el: HTMLStencilElement;
 
   async componentWillLoad(): Promise<void> {
+    await AppStorage.initFireBase();
     await Settings.updateSettings();
     this.checkIfToggleDarkTheme();
     Settings.changed$.subscribe((newSettings: ISettings) => {
       if (newSettings.appTheme === 'Dark') {
-       this.toggleDarkTheme(true);
+        this.toggleDarkTheme(true);
       }
       if (newSettings.appTheme === 'Light') {
         this.toggleDarkTheme(false);
@@ -28,12 +30,53 @@ export class MyApp {
     });
   }
 
+  async componentDidLoad(): Promise<void> {
+
+    if (Settings.dontShowViewModeChooser) {
+      return;
+    }
+
+    const alert = await alertController.create({
+      backdropDismiss: false,
+      message: 'Should app be in read only mode ?',
+      inputs: [
+        {
+          type: 'checkbox',
+          label: `Yes`,
+          value: 'readonlyMode',
+          checked: Settings.readonlyAppMode,
+        },
+        {
+          type: 'checkbox',
+          label: `Don't show again`,
+          value: 'dontShowAgain',
+          checked: false,
+        }
+      ],
+      buttons: [
+        {
+          text: 'Close it',
+          cssClass: 'primary',
+          handler: (data: string[]) => {
+            Settings.dontShowViewModeChooser = data.includes('dontShowAgain');
+            Settings.readonlyAppMode = data.includes('readonlyMode');
+
+            alert.dismiss();
+          }
+        }
+      ]
+    });
+
+    return alert.present();
+  }
+
   /**
    * Handle service worker updates correctly.
    * This code will show a toast letting the
    * user of the PWA know that there is a
    * new version available. When they click the
-   * reload button it then reloads the page
+   * reload button it then reloads the p
+   * .age
    * so that the new service worker can take over
    * and serve the fresh content
    */

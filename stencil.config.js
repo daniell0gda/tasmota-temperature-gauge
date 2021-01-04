@@ -29,7 +29,6 @@ exports.config = {
   },
   devServer: {
     root: 'www',
-    watchGlob: '**/**',
-    address: 'http://192.168.5.17:3333',
+    watchGlob: '**/**'
   }
 };

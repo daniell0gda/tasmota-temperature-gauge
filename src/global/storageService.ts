@@ -1,58 +1,52 @@
-import {Plugins} from '@capacitor/core';
 import {ITempLog} from '../components/app-home/model';
-
-const {Storage} = Plugins;
+import {ITemps} from './firebaseStorage';
+import {AppStorage} from '../components/my-app/settings';
+import {Subject} from 'rxjs';
+import {bufferCount, exhaustMap, map} from 'rxjs/operators';
+import {mean, round} from 'lodash';
+import {fromPromise} from 'rxjs/internal-compatibility';
 
 export class StorageService {
 
+  errorStorageKey: string = 'sonoff-th10-temps-errors';
+  afterInit: boolean = false;
 
-  errorStorageKey: string = 'sonoff-th10-temp-url-address-errors';
+  store$: Subject<ITempLog> = new Subject<ITempLog>();
 
-  constructor(public key: string = 'sonoff-th10-temp-url-address') {
+  constructor(public key: string = 'sonoff-th10-temps') {
     this.errorStorageKey = `${this.key}-errors`;
+
+    this.store$.pipe(
+      bufferCount(10),
+      map((array: ITempLog[]) => {
+        const temps = array.map((t: ITempLog) => t.temp);
+        return {
+          temp: round(mean(temps), 2),
+          date: array[2].date
+        } as ITempLog;
+      }),
+      exhaustMap((log:ITempLog)=>{
+        return fromPromise(AppStorage.storeTemp(log.date, log.temp));
+      })
+    ).subscribe();
   }
 
-  async store(log: ITempLog): Promise<ITempLog[]> {
-
-    const logs = await this.getData(this.key);
-    logs.push(log);
-
-    await Storage.set({
-      key: this.key,
-      value: JSON.stringify(logs)
-    });
-
-    return logs;
-  }
-
-  async storeError(error: string, when: Date): Promise<ITempLog[]> {
-    const logs = await this.getData(this.errorStorageKey);
-    logs.push({
-      error: error,
-      date: when.getTime()
-    });
-
-    await Storage.set({
-      key: this.errorStorageKey,
-      value: JSON.stringify(logs)
-    });
-
-    return logs;
+  async init(): Promise<void> {
+    await AppStorage.initLastDay();
+    await AppStorage.initLastHourCache();
   }
 
   async getErrors(): Promise<ITempLog[]> {
-    return this.getData(this.errorStorageKey);
-  }
 
-  async getTemperatures(): Promise<ITempLog[]> {
-    return this.getData(this.key);
-  }
-
-  private async getData(key: string): Promise<ITempLog[]> {
-    const data = await Storage.get({key: key});
-    if (data?.value) {
-      return JSON.parse(data.value) as ITempLog[];
-    }
+    // return this.getData(this.errorStorageKey);
     return [];
+  }
+
+  async getTemperatures(): Promise<ITemps> {
+    return this.getData();
+  }
+
+  private async getData(): Promise<ITemps> {
+    return AppStorage.getAllTemperatures();
   }
 }

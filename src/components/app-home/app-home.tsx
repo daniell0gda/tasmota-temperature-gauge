@@ -42,6 +42,7 @@ export class AppHome {
   constructor() {
 
   }
+
   componentWillLoad(): void {
     this.backgroundService = new BackgroundService();
     //TODO:
@@ -90,7 +91,7 @@ export class AppHome {
               class={!this.sensorOnline ? 'inactive' : ''}
               ref={(ref: any) => this.sensorTempElement = ref as any}
               val={this.currentTemp}
-              min={Settings.settings?.minTemp} max={Settings?.maxTemp}/>
+              min={Settings.settingsFromServer?.minTemp} max={Settings?.maxTemp}/>
             <div class={{
               'dot': true,
               'dotWithText': !!this.currentTemp,
@@ -143,7 +144,7 @@ export class AppHome {
     ];
   }
 
-  componentDidUnload(): void {
+  disconnectedCallback(): void {
     this.killReading$.next();
     this.tempReaderService.killReading();
   }
@@ -191,6 +192,8 @@ export class AppHome {
         this.currentTemp = temp;
         this.keeper.currentTemp = temp;
 
+        this.tempChart.addPoint(Date.now(), temp);
+
         const tempInRangeBefore = this.tempInRange;
         this.tempInRange = temp <= Settings.maxTemp && temp >= Settings.minTemp;
         if (!tempInRangeBefore && this.tempInRange) {
@@ -214,6 +217,7 @@ export class AppHome {
 
         setTimeout(() => {
           this.startReadingTemp();
+          this.tempReaderService.startReadingTemp();
         }, 3000);
       }
     });
@@ -222,7 +226,6 @@ export class AppHome {
 
   private manageDevice(): void {
     this.keeper.run().pipe(
-      takeWhile(() => Settings.useAsThermostat),
       filter(() => this.backgroundService.appInForeground)
     ).subscribe({
       next: async (devicePower: IPowerChangeResponse) => {
@@ -253,13 +256,19 @@ export class AppHome {
 
   private async onSettingChanged(): Promise<void> {
 
+    if (Settings.useAsThermostat) {
+      this.keeper.reading$.next(!Settings.readonlyAppMode);
+    } else {
+      this.keeper.reading$.next(false);
+    }
   }
 
   private async showError(msg: string | Error): Promise<any> {
     const log = new Log();
     log.time = new Date();
     log.type = 'ERROR';
-    log.value = msg instanceof Error ? msg.message : msg;
+    log.value = msg instanceof Error ? `${msg.message} \n ${msg.stack}` : msg;
+    console.error(log.value);
     await this.consoleElement.update(log);
   }
 

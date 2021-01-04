@@ -1,5 +1,3 @@
-import {LocalNotificationPendingList} from '@capacitor/core';
-
 export interface ISensorValue {
   Temperature: number;
 }
@@ -67,11 +65,6 @@ export enum TypeKeys {
   SET_DAILY_REMINDER_TIME,
   SET_PENDING_NOTIFICATIONS,
 
-}
-
-export interface SetPendingNotifications {
-  type: TypeKeys.SET_PENDING_NOTIFICATIONS;
-  pendingNotifications: LocalNotificationPendingList;
 }
 
 export interface ITempLog {

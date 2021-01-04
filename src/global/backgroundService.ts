@@ -1,4 +1,4 @@
-import {AppState, Plugins} from '@capacitor/core';
+import {App,} from '@capacitor/App';
 import {TempReaderService} from './tempReaderService';
 import {TempKeeper} from './tempKeeper';
 import {AppSettings} from './settings';
@@ -8,8 +8,8 @@ import {NotificationService} from './notificationService';
 import {Log} from '../components/console-component/model';
 import extend from 'lodash/extend';
 import {AndroidNotificationsService} from '../components/app-home/androidNotificationsService';
+import {AppState} from '@capacitor/app';
 
-const {App, BackgroundTask} = Plugins;
 
 export class BackgroundService {
   tempReaderService: TempReaderService = new TempReaderService();
@@ -42,18 +42,19 @@ export class BackgroundService {
 
         await this.readTemp();
 
-        let taskId = BackgroundTask.beforeExit(async () => {
-          // In this function We might finish an upload, let a network request
-          // finish, persist some data, or perform some other task
-
-
-          // Must call in order to end our task otherwise
-          // we risk our app being terminated, and possibly
-          // being labeled as impacting battery life
-          BackgroundTask.finish({
-            taskId
-          });
-        });
+        //TODO: check how to do it in capacitor 3+u
+        // let taskId = BackgroundTask.beforeExit(async () => {
+        //   // In this function We might finish an upload, let a network request
+        //   // finish, persist some data, or perform some other task
+        //
+        //
+        //   // Must call in order to end our task otherwise
+        //   // we risk our app being terminated, and possibly
+        //   // being labeled as impacting battery life
+        //   BackgroundTask.finish({
+        //     taskId
+        //   });
+        // });
       } else {
         this.consoleFeed$.next(extend(new Log(), {
           value: 'Switching app to front',
@@ -79,7 +80,7 @@ export class BackgroundService {
         this.keeper.tryToggleDevice(temp);
         await this.notificationService.sendNotificationIfNecessary(temp, this.settings);
       },
-      error: async (err:string) => {
+      error: async (err: string) => {
         this.consoleFeed$.next(extend(new Log(), {
           value: err,
           type: 'ERROR',

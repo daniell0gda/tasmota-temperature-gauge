@@ -1,6 +1,6 @@
 import {fromFetch} from 'rxjs/fetch';
-import {catchError, exhaustMap, filter, map, startWith, switchMap, takeUntil, takeWhile, tap} from 'rxjs/operators';
-import {interval, NEVER, Observable, of, Subject, throwError} from 'rxjs';
+import {catchError, distinctUntilChanged, exhaustMap, filter, map, mergeMap, startWith, switchMap, takeUntil, takeWhile, tap} from 'rxjs/operators';
+import {iif, interval, NEVER, Observable, of, Subject, throwError} from 'rxjs';
 import {IPowerChangeResponse, IPowerStatusResponse} from '../components/app-home/model';
 import urljoin from 'url-join';
 import {Settings} from '../components/my-app/settings';
@@ -14,31 +14,30 @@ export class TempKeeper {
   lastStatus: IPowerChangeResponse;
   reading$: Subject<boolean> = new Subject<boolean>();
 
+  shouldRead:boolean = true;
+
   start(): void {
     this.reading$.next(true);
   }
 
   run(): Observable<IPowerChangeResponse> {
-    if (!Settings.useAsThermostat) {
-      return NEVER;
-    }
 
     return this.reading$.pipe(
-      exhaustMap(() => {
-        return interval(this.checkEvery).pipe(
-          takeWhile(()=> Settings.useAsThermostat),
+      distinctUntilChanged(),
+      tap((shouldRead:boolean)=> this.shouldRead = shouldRead),
+      mergeMap((shouldRefresh: boolean) => {
+        return iif(() => shouldRefresh, interval(this.checkEvery).pipe(
+          takeWhile(() => this.shouldRead),
           startWith(0),
-          switchMap(() => this.tryToggleDevice(this.currentTemp))
-        );
-      })
-    );
+          exhaustMap(() => this.tryToggleDevice(this.currentTemp))
+        ), NEVER);
+      }));
   }
 
   tryToggleDevice(currentTemp: number): Observable<IPowerChangeResponse> {
     const {maxTemp, minTemp} = Settings;
 
     //TODO: heating?
-    this.reading$.next(false);
 
     this.msgFeed.next(`Trying to toggle device: temp (${currentTemp})`);
 
@@ -85,6 +84,7 @@ export class TempKeeper {
   }
 
   private callDeviceSetStatus(httpAddress: string, to: 'On' | 'Off'): Observable<IPowerChangeResponse> {
+
     return fromFetch(
       httpAddress,
       {

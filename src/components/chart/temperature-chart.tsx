@@ -1,16 +1,17 @@
 import {Component, Element, forceUpdate, h, Host, Method, Prop} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
-import moment from 'moment';
 import {SensorStorage} from '../../global/sensorStorage';
 // tslint:disable-next-line:no-duplicate-imports
-import ApexCharts, {ApexOptions} from 'apexcharts';
-import {Settings} from '../my-app/settings';
-import {ChartOptions} from 'chart.js';
 import {iif, interval, NEVER, Subject} from 'rxjs';
 import {mergeMap, startWith, switchMap, takeUntil, takeWhile} from 'rxjs/operators';
 import {fromPromise} from 'rxjs/internal-compatibility';
-import {first, last, max, mean, min, round} from 'lodash';
-import {Color} from '@ionic/core';
+import {Color, loadingController} from '@ionic/core';
+import Highcharts, {Chart, PointOptionsType} from 'highcharts';
+import darkTheme from 'highcharts/themes/dark-unica';
+import {mean, round} from 'lodash';
+import {ITempLog} from '../app-home/model';
+import moment from 'moment';
+
 
 @Component({
   tag: 'temperature-chart',
@@ -22,22 +23,14 @@ export class TemperatureChart {
   @Prop() _min: number = 10;
   @Prop() _max: number = 30;
   chartData: [number, (number | null)][] = [];
+  loading?: HTMLIonLoadingElement;
   private storage: SensorStorage = new SensorStorage();
-  private chartDivElement: HTMLDivElement | undefined;
-  private mainChart: ApexCharts;
-  private series: ApexAxisChartSeries;
-  private chart: ApexChart;
-  private dataLabels: ApexDataLabels;
-  private markers: ApexMarkers;
-  private title: ApexTitleSubtitle;
-  private fill: ApexFill;
-  private yaxis: ApexYAxis;
-  private xaxis: ApexXAxis;
-  private tooltip: ApexTooltip;
+
   private refreshView$: Subject<boolean> = new Subject<boolean>();
   private componentIsDead$: Subject<boolean> = new Subject<boolean>();
   private shouldRefresh: boolean = false;
-  private tickSize: 'hour' | 'day' | 'week' | 'all' = 'hour';
+  private tickSize: 'hour' | 'day' | 'all' = 'hour';
+  private higchart: Chart;
 
   constructor() {
 
@@ -64,11 +57,19 @@ export class TemperatureChart {
         this.setChartSize();
       });
     });
-
     await this.setMainChart(this.chartData);
+    const loader = setInterval(()=> {
+      if(document.readyState !== 'complete') return;
+      clearInterval(loader);
+      this.setChartSize();
+    }, 150);
   }
 
-  componentDidUnload(): void {
+  async componentDidRender(): Promise<void> {
+
+  }
+
+  disconnectedCallback(): void {
     this.componentIsDead$.next();
   }
 
@@ -88,22 +89,32 @@ export class TemperatureChart {
           <ion-icon name="checkmark-circle-outline" hidden={this.tickSize !== 'day'}></ion-icon>
           <ion-label>Day</ion-label>
         </ion-chip>
-        <ion-chip onClick={() => this.setTickSizeWeek()} color={this.chipColorGet('week')}>
-          <ion-icon name="checkmark-circle-outline" hidden={this.tickSize !== 'week'}></ion-icon>
-          <ion-label>Week</ion-label>
-        </ion-chip>
         <ion-chip onClick={() => this.setTickSizeAll()} color={this.chipColorGet('all')}>
           <ion-icon name="checkmark-circle-outline" hidden={this.tickSize !== 'all'}></ion-icon>
           <ion-label>All</ion-label>
         </ion-chip>
       </div>
-      <div ref={(el: HTMLDivElement | undefined) => this.chartDivElement = el as HTMLDivElement}/>
+      <div id="higChartContainer"
+           style={{
+             height: '400px',
+             width: '100%'
+           }}/>
     </Host>;
   }
 
   @Method()
   async viewOn(): Promise<void> {
     this.shouldRefresh = true;
+
+    this.loading = await loadingController.create({
+      spinner: 'circles',
+      duration: 5000,
+      message: 'loading..keep calm',
+      translucent: true,
+      backdropDismiss: true
+    });
+    await this.loading.present();
+
     this.refreshView$.next(true);
   }
 
@@ -113,150 +124,116 @@ export class TemperatureChart {
     this.refreshView$.next(false);
   }
 
+  @Method()
+  async addPoint(date: number, temp: number): Promise<void> {
+
+    if (!this.shouldRefresh) {
+      return;
+    }
+    this.higchart.series[0].addPoint([date, temp] as PointOptionsType);
+  }
+
   private async setChartSize(): Promise<void> {
     const buttons = this.el.querySelector('.log-buttons');
     if (!buttons) {
       return;
     }
 
-    const appSize = document.querySelector('ion-app').clientHeight;
-    const tabBarSize = document.querySelector('ion-tab-bar').clientHeight;
-    const logButtonsSize = this.el.querySelector('.log-buttons').clientHeight;
-    this.chart.height = appSize - tabBarSize - logButtonsSize;
-    await this.mainChart.updateOptions({
-      chart: this.chart
-    } as ChartOptions);
+    const appSize = document.querySelector('ion-app').clientWidth;
+
+    this.higchart.update({
+      chart: {
+        width: appSize
+      }
+    }, false, false, false);
   }
 
-  private async setMainChart(chartData: [number, (number | null)][]): Promise<void> {
-    const styles = getComputedStyle(document.querySelector('body'));
-    const theme = document.querySelector('body').className.includes('dark') ? 'dark' : 'light';
-    const textColor = styles.getPropertyValue('--ion-text-color').trim();
-    const dangerColor = styles.getPropertyValue('--ion-color-danger').trim();
+  private async setMainChart(chartData: [number, number][]): Promise<void> {
+    darkTheme(Highcharts);
 
-
-    this.series = [
-      {
-        name: 'Temp.℃',
-        data: chartData,
-      }
-    ];
-    this.chart = {
-      type: 'area',
-      stacked: false,
-      animations: {
-        enabled: false
+    this.higchart = Highcharts.chart('higChartContainer', {
+      chart: {
+        type: 'line',
+        zoomType: 'x',
       },
-      height: 300,
-      zoom: {
-        type: 'y',
-        enabled: true,
-        autoScaleYaxis: false,
-      },
-      toolbar: {
-        autoSelected: 'zoom'
-      },
-
-    };
-    this.dataLabels = {
-      enabled: false,
-    };
-    this.markers = {
-      size: 0.6
-    };
-    this.title = {
-      text: 'Temperatura w czasie',
-      align: 'left'
-    };
-    this.fill = {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        inverseColors: false,
-        opacityFrom: 0.5,
-        opacityTo: 0,
-        stops: [0, 90, 100]
-      }
-    };
-    this.yaxis = {
-
       title: {
-        text: 'Temp'
-      }
-    };
-    this.xaxis = {
-      type: 'datetime',
-      title: {
-        text: 'Kiedy'
+        text: 'Temperatura w czasie'
       },
-      labels: {
-        format: 'dd MMM HH:mm',
-        style: {
-          colors: textColor
+      subtitle: {
+        text: document.ontouchstart === undefined ?
+          'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in'
+      },
+      xAxis: {
+        type: 'datetime',
+      },
+      yAxis: {
+        title: {
+          text: 'Temperatura ℃'
         }
-      }
-    };
-    this.tooltip = {
-      shared: false,
-      theme: theme,
-      x: {
-        format: 'dd MMM HH:mm'
-      }
-    };
-
-    const annotations: ApexAnnotations = {
-      yaxis: [
-        {
-          y: Settings.maxTemp,
-          borderColor: dangerColor || 'red',
-          label: {
-            text: `Max Temp.`,
-            offsetY: -7,
+      },
+      plotOptions: {
+        area: {
+          fillColor: {
+            linearGradient: {
+              x1: 0,
+              y1: 0,
+              x2: 0,
+              y2: 1
+            },
+            stops: [
+              [0, Highcharts.getOptions().colors[0]],
+              [1, Highcharts.color(Highcharts.getOptions().colors[0] as any).setOpacity(0).get('rgba') as any]
+            ]
           },
-          borderWidth: 3,
-          strokeDashArray: 3,
-          opacity: 0.3
-        },
-        {
-          y: Settings.minTemp,
-          borderColor: dangerColor || 'red',
-          borderWidth: 3,
-          strokeDashArray: 3,
-          label: {
-            text: `Min Temp.`,
-            offsetY: 20,
+          marker: {
+            radius: 2
           },
-          opacity: 0.3
+          lineWidth: 1,
+          states: {
+            hover: {
+              lineWidth: 1
+            }
+          },
+          threshold: null
         }
-      ]
-    };
+      },
+      series: [{
+        id: 'tempSeries',
+        name: 'Temp',
+        type: 'area',
+        data: chartData as any,
+      }]
+    }, () => {
 
-    this.mainChart = new ApexCharts(this.chartDivElement, {
-      tooltip: this.tooltip,
-      xaxis: this.xaxis,
-      yaxis: this.yaxis,
-      fill: this.fill,
-      title: this.title,
-      markers: this.markers,
-      dataLabels: this.dataLabels,
-      chart: this.chart,
-      series: this.series,
-      annotations: annotations,
-      noData: {
-        text: 'Waiting for temperatures...',
-        color: textColor,
-      }
-    } as ApexOptions);
-    await this.mainChart.render();
+    });
+
   }
 
   private async loadAllDataFromStorage(): Promise<void> {
     this.chartData = [];
 
     const logs = await this.storage.getTemperatures();
-    for (const log of logs) {
+    delete logs['last'];
+    const days = Object.values(logs);
 
-      this.chartData.push([log.date, log.temp]);
+    let counter = 0;
+    let meanArray: number[] = [];
+    for (const tick of days) {
+
+      const hours = Object.values(tick);
+
+      for (const hour of hours) {
+        for (const iTempLog of hour as ITempLog[]) {
+          meanArray.push(iTempLog.temp);
+          counter++;
+          if (counter >= 10) {
+            const meanValue = round(mean(meanArray), 2);
+            this.chartData.push([iTempLog.date, meanValue]);
+            meanArray = [];
+            counter = 0;
+          }
+        }
+      }
     }
   }
 
@@ -267,19 +244,11 @@ export class TemperatureChart {
 
     if (this.tickSize !== 'all') {
       await this.calculateMeanTemps(this.tickSize);
-    } else {
-      await this.loadAllDataFromStorage();
+      await this.loading.dismiss();
+
+      this.higchart.series[0].setData(this.chartData as any);
     }
-
-    setTimeout(async () => {
-      await this.updateSeries();
-
-      if (this.tickSize !== 'all') {
-        this.zoomWithMoment();
-      }
-    });
-
-    forceUpdate(this.el);
+    await this.setChartSize();
   }
 
   private async setTickSizeHour(): Promise<void> {
@@ -294,15 +263,10 @@ export class TemperatureChart {
 
   private async setTickSizeDay(): Promise<void> {
     this.tickSize = 'day';
+
+
     await this.calculateMeanTemps('day');
 
-    await this.updateSeries();
-    forceUpdate(this.el);
-  }
-
-  private async setTickSizeWeek(): Promise<void> {
-    this.tickSize = 'week';
-    await this.calculateMeanTemps('week');
     await this.updateSeries();
 
     forceUpdate(this.el);
@@ -310,58 +274,56 @@ export class TemperatureChart {
 
   private async setTickSizeAll(): Promise<void> {
     this.tickSize = 'all';
+    forceUpdate(this.el);
 
     this.chartData = [];
-    this.mainChart.updateSeries([{
-      name: 'Temp.℃',
-      data: this.chartData,
-    }], false);
 
-    forceUpdate(this.el);
-    setTimeout(async () => {
-      await this.loadAllDataFromStorage();
-      this.mainChart.updateSeries([{
-        name: 'Temp.℃',
-        data: this.chartData,
-      }], false);
-    });
+    await this.loadAllDataFromStorage();
+    await this.updateSeries();
+
+
   }
 
-  private async calculateMeanTemps(unit: 'hour' | 'day' | 'week'): Promise<void> {
+  private async calculateMeanTemps(unit: 'hour' | 'day'): Promise<void> {
     this.chartData = [];
 
-    const logs = await this.storage.getTemperatures();
-    let hook: number = logs[0].date;
+    let logs = await this.storage.getTemperatures();
+    delete logs['last'];
+    const days = Object.values(logs);
 
-    let temps: number[] = [];
-    for (const log of logs) {
-      if (!hook) {
-        hook = log.date;
+    for (const tick of days) {
+      delete tick['processed'];
+
+      const hours = Object.values(tick);
+
+      if (unit === 'hour') {
+        for (const hour of hours) {
+          if (hour.length === 0) {
+            continue;
+          }
+          const hours = hour.map((h: ITempLog) => h.temp);
+          const newDate = moment(hour[0].date).minute(0).second(0).toDate().getTime();
+          this.chartData.push([newDate, round(mean(hours), 2)]);
+        }
       }
+      if (unit === 'day') {
+        let ticks: number[] = [];
+        for (const hour of hours) {
+          if (hour.length === 0) {
+            continue;
+          }
+          ticks = [...ticks, ...hour.map((h: ITempLog) => h.temp)];
+        }
 
-      const sameHour = moment(log.date).isSame(hook, unit);
-      const newDate = moment(log.date).minute(0).second(0).toDate().getTime();
-      if (sameHour) {
-        temps.push(log.temp);
-      } else {
-
-        this.chartData.push([newDate, round(mean(temps), 2)]);
-
-        temps = [round(log.temp, 2)];
-        hook = log.date;
+        const filtered = ticks.filter((tick: number) => !!tick);
+        // const newDate = moment(hours[0][0].date).minute(0).second(0).hour(0).toDate().getTime();
+        this.chartData.push([hours[0][0].date, round(mean(filtered), 2)]);
       }
     }
-    const newDate = moment(hook).minute(0).second(0).toDate().getTime();
-    this.chartData.push([newDate, round(mean(temps), 2)]);
   }
 
   private async updateSeries(): Promise<void> {
-    this.mainChart.updateSeries([{
-      name: 'Temp.℃',
-      data: this.chartData,
-    }], false);
-
-    await this.setNewMinMaxY();
+    this.higchart.series[0].setData(this.chartData as any);
   }
 
   private chipColorGet(tick: 'hour' | 'day' | 'week' | 'all'): Color | undefined {
@@ -369,33 +331,5 @@ export class TemperatureChart {
       return 'primary';
     }
     return undefined;
-  }
-
-  private zoomWithMoment(): void {
-    if (this.chartData.length >= 2) {
-      const lastLog = last(this.chartData);
-      const firstLog = first(this.chartData);
-      if (lastLog) {
-        const startDate = moment(firstLog[0]).add(-3, 'hour');
-        const endDate = moment(lastLog[0]).add(3, 'hour');
-
-        this.mainChart.zoomX(startDate.toDate().getTime(), endDate.toDate().getTime());
-      }
-    }
-  }
-
-  private async setNewMinMaxY(): Promise<void> {
-    const temps = this.chartData.map((val: [number, (number | null)]) => val[1]);
-    const minTemp = min(temps);
-    const maxTemp = max(temps);
-
-    const newMinTemp = min([Settings.minTemp, minTemp]);
-    const newMaxTemp = max([Settings.maxTemp, maxTemp]);
-    this.yaxis.min = newMinTemp - 1;
-    this.yaxis.max = newMaxTemp + 1;
-
-    await this.mainChart.updateOptions({
-      yaxis: this.yaxis,
-    } as ChartOptions);
   }
 }

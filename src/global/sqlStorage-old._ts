@@ -1,0 +1,95 @@
+import {Capacitor} from '@capacitor/core';
+import {ITempLog} from '../components/app-home/model';
+
+export class SqlStorage {
+  _sqlite: any;
+  _platform: string;
+  _isPermission: boolean = true;
+  dbName: string = 'sonoff-th10-temps';
+  tableName: string = 'temps';
+
+  async init(): Promise<void> {
+    this._platform = Capacitor.getPlatform();
+
+    return new Promise((async(resolve: (value?: (PromiseLike<void> | void)) => void) => {
+      this._sqlite.addListener(
+        'androidPermissionsRequest', async (data: any) => {
+          if (data.permissionGranted === 1) {
+            this._isPermission = true;
+
+            await this.tryCreateTable();
+          } else {
+            this._isPermission = false;
+          }
+          resolve();
+        });
+
+      if (this._platform !== 'web') {
+        try {
+          this._sqlite.requestPermissions();
+        } catch (e) {
+          console.log('Error requesting permissions!' + JSON.stringify(e));
+        }
+      }
+
+
+    }));
+  }
+
+  async store(date: number, temp: number): Promise<void> {
+    if (!this._isPermission) {
+      console.log('Permissions not granted');
+      return;
+    }
+
+    let result: any = await this._sqlite.open({database: this.dbName});
+    const retOpenDB = result.result;
+
+    if (retOpenDB) {
+      const insertCmd = `INSERT INTO ${this.tableName} (date,temp) VALUES (?,?);`;
+      let values: Array<any> = [date, temp];
+      let retRun: any = await this._sqlite.run({statement: insertCmd, values: values});
+
+      console.log('retRun ', retRun.changes.changes, retRun.changes.lastId);
+    } else {
+      console.log('Error: Open database failed');
+      return;
+    }
+  }
+
+  async get(): Promise<ITempLog[]> {
+    if (!this._isPermission) {
+      console.log('Permissions not granted');
+      return;
+    }
+
+    let result: any = await this._sqlite.open({database: this.dbName});
+    const retOpenDB = result.result;
+
+    if (!retOpenDB) {
+      return [];
+    }
+
+    const sqlcmd = `SELECT date,temp FROM ${this.tableName}`;
+    const retSelect = await this._sqlite.query({statement: sqlcmd});
+
+    console.log('retSelect ', retSelect.values.length);
+
+    return retSelect.values;
+  }
+
+  private async tryCreateTable(): Promise<void> {
+    let sqlcmd: string = `
+        BEGIN TRANSACTION;
+        CREATE TABLE IF NOT EXISTS ${this.tableName} (
+          date INTEGER PRIMARY KEY NOT NULL,
+          temp INTEGER NOT NULL
+        );
+        PRAGMA user_version = 1;
+        COMMIT TRANSACTION;
+        `;
+    let retExe: any = await this._sqlite.execute({statements: sqlcmd});
+    console.log('retExe ', retExe.changes.changes);
+  }
+
+}

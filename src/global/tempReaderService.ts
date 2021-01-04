@@ -2,7 +2,7 @@ import {interval, Observable, Subject, throwError} from 'rxjs';
 
 import {ISensorResponse} from '../components/app-home/model';
 import {fromFetch} from 'rxjs/fetch';
-import {catchError, exhaustMap, filter, map, startWith, switchMap, takeUntil, takeWhile, tap} from 'rxjs/operators';
+import {catchError, distinctUntilChanged, exhaustMap, filter, map, startWith, switchMap, takeUntil, takeWhile, tap} from 'rxjs/operators';
 import urljoin from 'url-join';
 import {SensorStorage} from './sensorStorage';
 import {Settings} from '../components/my-app/settings';
@@ -33,13 +33,15 @@ export class TempReaderService {
     this.killReading$.next(true);
   }
 
-  startReadingTemp(): void {
+  async startReadingTemp(): Promise<void> {
+    await this.storage.init();
     this.reading$.next(true);
   }
 
   private pollData(): Observable<number | void> {
 
     return this.reading$.pipe(
+      distinctUntilChanged(),
       exhaustMap((shouldRead: boolean) => {
         return interval(this.checkEvery).pipe(
           takeWhile(() => shouldRead),
@@ -70,11 +72,14 @@ export class TempReaderService {
       catchError(async (error: any) => {
         console.error(error);
         const msg = ['There is a problem with polling request (network problem).', error].join('; ');
-        await this.storage.storeError(msg, new Date());
+        // await this.storage.storeError(msg, new Date());
         return throwError(msg);
       }),
       switchMap((response: Response) => {
 
+        if (!response.json) {
+          return throwError(JSON.stringify(response));
+        }
         if (response.ok) {
           return response.json();
         } else {
@@ -93,14 +98,17 @@ export class TempReaderService {
           this.sensorStateChanged.next(false);
         }
       }),
+      filter((response: ISensorResponse) => !!response.StatusSNS?.DS18B20?.Temperature),
       map((response: ISensorResponse) => response.StatusSNS.DS18B20.Temperature),
       takeUntil(this.killReading$),
       tap(async (value: number) => {
         this.lastReading = value;
-        await this.storage.store({
-          temp: value,
-          date: Date.now()
-        });
+        if (!Settings.readonlyAppMode) {
+          this.storage.store$.next({
+            temp: value,
+            date: Date.now()
+          });
+        }
       })
     );
   }

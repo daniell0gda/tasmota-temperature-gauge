@@ -6,6 +6,7 @@
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 import { Log } from "./components/console-component/model";
+import { PointOptionsType } from "highcharts";
 export namespace Components {
     interface AppHome {
     }
@@ -29,11 +30,15 @@ export namespace Components {
         "_max": number;
         "_min": number;
         "_temps": string;
+        "addPoint": (date: number, temp: number) => Promise<void>;
         "viewOff": () => Promise<void>;
         "viewOn": () => Promise<void>;
     }
     interface ThermometerGauge {
         "update": (current: number, min: number, max: number) => Promise<void>;
+    }
+    interface ViewModeModal {
+        "_value": string;
     }
 }
 declare global {
@@ -79,6 +84,12 @@ declare global {
         prototype: HTMLThermometerGaugeElement;
         new (): HTMLThermometerGaugeElement;
     };
+    interface HTMLViewModeModalElement extends Components.ViewModeModal, HTMLStencilElement {
+    }
+    var HTMLViewModeModalElement: {
+        prototype: HTMLViewModeModalElement;
+        new (): HTMLViewModeModalElement;
+    };
     interface HTMLElementTagNameMap {
         "app-home": HTMLAppHomeElement;
         "app-settings": HTMLAppSettingsElement;
@@ -87,6 +98,7 @@ declare global {
         "sensor-temp": HTMLSensorTempElement;
         "temperature-chart": HTMLTemperatureChartElement;
         "thermometer-gauge": HTMLThermometerGaugeElement;
+        "view-mode-modal": HTMLViewModeModalElement;
     }
 }
 declare namespace LocalJSX {
@@ -113,6 +125,9 @@ declare namespace LocalJSX {
     }
     interface ThermometerGauge {
     }
+    interface ViewModeModal {
+        "_value"?: string;
+    }
     interface IntrinsicElements {
         "app-home": AppHome;
         "app-settings": AppSettings;
@@ -121,6 +136,7 @@ declare namespace LocalJSX {
         "sensor-temp": SensorTemp;
         "temperature-chart": TemperatureChart;
         "thermometer-gauge": ThermometerGauge;
+        "view-mode-modal": ViewModeModal;
     }
 }
 export { LocalJSX as JSX };
@@ -134,6 +150,7 @@ declare module "@stencil/core" {
             "sensor-temp": LocalJSX.SensorTemp & JSXBase.HTMLAttributes<HTMLSensorTempElement>;
             "temperature-chart": LocalJSX.TemperatureChart & JSXBase.HTMLAttributes<HTMLTemperatureChartElement>;
             "thermometer-gauge": LocalJSX.ThermometerGauge & JSXBase.HTMLAttributes<HTMLThermometerGaugeElement>;
+            "view-mode-modal": LocalJSX.ViewModeModal & JSXBase.HTMLAttributes<HTMLViewModeModalElement>;
         }
     }
 }

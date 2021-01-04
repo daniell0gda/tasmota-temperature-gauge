@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "170271833173",
+    "firebase_url": "https://tempreader-558d7-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "tempreader-558d7",
+    "storage_bucket": "tempreader-558d7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:170271833173:android:5ad8f2bea580130c1468dc",
+        "android_client_info": {
+          "package_name": "com.tasmota.temperature.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "170271833173-dj94362v6livltkgds3cvpppfueperji.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRBwtRc0axd32bzI_iMGuxGDo89WK0hS4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "170271833173-dj94362v6livltkgds3cvpppfueperji.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
