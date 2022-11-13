@@ -170,6 +170,7 @@ export class AppSettings {
 
     this.settingsFromServer = await AppStorage.getSettings();
 
+
     if (!this.useLocalSettings) {
       this.usedSettings = this.settingsFromServer;
     } else {

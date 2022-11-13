@@ -41,6 +41,14 @@ export namespace Components {
         "_value": string;
     }
 }
+export interface AppHomeCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLAppHomeElement;
+}
+export interface AppSettingsCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLAppSettingsElement;
+}
 declare global {
     interface HTMLAppHomeElement extends Components.AppHome, HTMLStencilElement {
     }
@@ -103,10 +111,10 @@ declare global {
 }
 declare namespace LocalJSX {
     interface AppHome {
-        "onDomReady"?: (event: CustomEvent<any>) => void;
+        "onDomReady"?: (event: AppHomeCustomEvent<any>) => void;
     }
     interface AppSettings {
-        "onSettingChanged"?: (event: CustomEvent<void>) => void;
+        "onSettingChanged"?: (event: AppSettingsCustomEvent<void>) => void;
         "val"?: number;
     }
     interface ConsoleComponent {

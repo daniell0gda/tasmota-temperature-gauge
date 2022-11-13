@@ -17,7 +17,13 @@ export class MyApp {
   @Element() el: HTMLStencilElement;
 
   async componentWillLoad(): Promise<void> {
-    await AppStorage.initFireBase();
+    try {
+      await AppStorage.initFireBase();
+    } catch (e) {
+      alert('Initializing firebase failed');
+      throw new Error('Initializing firebase failed' + e);
+    }
+
     await Settings.updateSettings();
     this.checkIfToggleDarkTheme();
     Settings.changed$.subscribe((newSettings: ISettings) => {
@@ -70,16 +76,7 @@ export class MyApp {
     return alert.present();
   }
 
-  /**
-   * Handle service worker updates correctly.
-   * This code will show a toast letting the
-   * user of the PWA know that there is a
-   * new version available. When they click the
-   * reload button it then reloads the p
-   * .age
-   * so that the new service worker can take over
-   * and serve the fresh content
-   */
+
   @Listen('swUpdate', {target: 'window'})
   async onSWUpdate(): Promise<void> {
     // const toast = await this.toastCtrl.create({
@@ -100,7 +97,7 @@ export class MyApp {
         <ion-router useHash={false}>
           <ion-route url="/" component="app-home"/>
         </ion-router>
-
+        abc
         {app}
       </ion-app>
     );
