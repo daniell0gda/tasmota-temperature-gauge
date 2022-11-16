@@ -1,10 +1,9 @@
 import {ITempLog} from '../components/app-home/model';
 import {initializeApp} from 'firebase/app';
-import {Database, DataSnapshot, get, getDatabase, Query, ref, set as dbSet} from 'firebase/database';
+import {Database, DataSnapshot, get, getDatabase, query, ref, set as dbSet} from 'firebase/database';
 import moment from 'moment';
 import {ISettings} from './settings';
 import {has, mean, round, set} from 'lodash';
-import {getAuth, onAuthStateChanged} from 'firebase/auth';
 
 export interface ITemps {
 
@@ -44,27 +43,10 @@ export class FirebaseStorage {
       // measurementId: 'G-85J8DHXQP3'
     };
 
-    return new Promise((resolve, reject) => {
-      let firebaseApp = initializeApp(firebaseConfig);
 
-      this.myDatabase = getDatabase(firebaseApp);
+    let firebaseApp = initializeApp(firebaseConfig);
 
-      const auth = getAuth(firebaseApp);
-      onAuthStateChanged(auth, user => {
-        // Check for user status
-        if (!user) {
-          reject();
-          return;
-        }
-        console.log(user);
-
-        resolve();
-      });
-
-
-    });
-    // Initialize Firebase
-
+    this.myDatabase = getDatabase(firebaseApp);
   }
 
   async storeTemp(date: number, temp: number): Promise<void> {
@@ -120,17 +102,9 @@ export class FirebaseStorage {
 
     const allTempsRef = 'temperatury';
     let databaseReference = ref(this.myDatabase, allTempsRef);
-    const allTemps = await new Promise(((resolve: (value?: (PromiseLike<ITemps> | ITemps)) => void) => {
 
-
-      get({
-        ref: databaseReference
-      } as Query).then((snapshot: DataSnapshot) => {
-        const data = snapshot.val();
-        this.temps = data;
-        resolve(data);
-      });
-    }));
+    let snapshot = await this.makeDbRequest('temperatury');
+    let allTemps = this.temps = snapshot.val();
 
     const anyChanged = await this.setMeanHoursForOldDays(allTemps);
     if (anyChanged) {
@@ -139,6 +113,7 @@ export class FirebaseStorage {
 
     this.lastAllTempsRequest = new Date();
     this.temps = allTemps;
+
     return allTemps;
   }
 
@@ -146,18 +121,14 @@ export class FirebaseStorage {
     if (!this.lastDate) {
       return {};
     }
-    const firebasePath = this.hourKeyGet(this.lastDate.lastDate, this.lastDate.lastHour);
-    let databaseReference = ref(this.myDatabase, firebasePath);
-    return new Promise(((resolve: (value?: (PromiseLike<ITemps> | ITemps)) => void) => {
 
-      get({
-        ref: databaseReference
-      } as Query).then((snapshot: DataSnapshot) => {
-        const data = snapshot.val();
-        this.setCacheOn(this.lastDate, data);
-        resolve(data || []);
-      });
-    }));
+    const firebasePath = this.hourKeyGet(this.lastDate.lastDate, this.lastDate.lastHour);
+
+    let snapshot = await this.makeDbRequest(firebasePath);
+    const data = snapshot.val();
+    this.setCacheOn(this.lastDate, data);
+
+    return data || [];
   }
 
   /**
@@ -170,17 +141,10 @@ export class FirebaseStorage {
   }
 
   async initLastDay(): Promise<ILastDate> {
-    let databaseReference = ref(this.myDatabase, `temperatury/last`);
 
-    return new Promise(((resolve: (value?: (PromiseLike<ILastDate> | ILastDate)) => void) => {
-      get({
-        ref: databaseReference
-      } as Query).then((snapshot: DataSnapshot) => {
-        const data = snapshot.val();
-        this.lastDate = data;
-        resolve(data);
-      });
-    }));
+    let snapshot = await this.makeDbRequest(`temperatury/last`);
+    this.lastDate = snapshot.val();
+    return this.lastDate;
   }
 
   async setSettings(settings: ISettings): Promise<any> {
@@ -190,21 +154,15 @@ export class FirebaseStorage {
 
   async getSettings(): Promise<ISettings | undefined> {
 
-    return new Promise(((resolve: (value?: (PromiseLike<ISettings> | ISettings)) => void, reject: (arg: any) => void) => {
-      try {
+    let snapshot = await this.makeDbRequest(`settings/th10-fridge`);
+    const data = snapshot.val();
+    this.lastDate = data;
+    return data || {};
+  }
 
-        let databaseReference = ref(this.myDatabase, `settings/th10-fridge`);
-        get({
-          ref: databaseReference
-        } as Query).then((snapshot: DataSnapshot) => {
-          const data = snapshot.val();
-          this.lastDate = data;
-          resolve(data || {});
-        });
-      } catch (e) {
-        reject(e);
-      }
-    }));
+  private makeDbRequest(path: string): Promise<DataSnapshot> {
+    let databaseReference = ref(this.myDatabase, path);
+    return get(query(databaseReference));
   }
 
   private async setMeanHoursForOldDays(allTemps: ITemps): Promise<boolean> {
