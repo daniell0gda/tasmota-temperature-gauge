@@ -1,7 +1,7 @@
 import {Component, Element, Event, EventEmitter, forceUpdate, h} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {TempReaderService} from '../../global/tempReaderService';
-import {filter, takeUntil, takeWhile} from 'rxjs/operators';
+import {filter, takeUntil} from 'rxjs/operators';
 
 import {Log} from '../console-component/model';
 import {NotificationService} from '../../global/notificationService';

@@ -1,4 +1,4 @@
-import {Component, Element, h, Listen} from '@stencil/core';
+import {Component, Element, forceUpdate, h, Listen} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {AppStorage, Settings} from './settings';
 import {AppThemeSetting} from '../app-settings/model';
@@ -17,26 +17,14 @@ export class MyApp {
   @Element() el: HTMLStencilElement;
 
   async componentWillLoad(): Promise<void> {
-    try {
-      await AppStorage.initFireBase();
-    } catch (e) {
-      alert('Initializing firebase failed');
-      throw new Error('Initializing firebase failed' + e);
-    }
 
-    await Settings.updateSettings();
-    this.checkIfToggleDarkTheme();
-    Settings.changed$.subscribe((newSettings: ISettings) => {
-      if (newSettings.appTheme === 'Dark') {
-        this.toggleDarkTheme(true);
-      }
-      if (newSettings.appTheme === 'Light') {
-        this.toggleDarkTheme(false);
-      }
-    });
   }
 
   async componentDidLoad(): Promise<void> {
+
+    await this.initializeDb();
+
+    forceUpdate(this.el);
 
     if (Settings.dontShowViewModeChooser) {
       return;
@@ -76,7 +64,6 @@ export class MyApp {
     return alert.present();
   }
 
-
   @Listen('swUpdate', {target: 'window'})
   async onSWUpdate(): Promise<void> {
     // const toast = await this.toastCtrl.create({
@@ -101,6 +88,27 @@ export class MyApp {
         {app}
       </ion-app>
     );
+  }
+
+  private async initializeDb(): Promise<void> {
+    try {
+
+      await AppStorage.initFireBase(true);
+    } catch (e) {
+      alert('Initializing firebase failed!');
+      throw new Error('Initializing firebase failed' + e);
+    }
+
+    await Settings.updateSettings();
+    this.checkIfToggleDarkTheme();
+    Settings.changed$.subscribe((newSettings: ISettings) => {
+      if (newSettings.appTheme === 'Dark') {
+        this.toggleDarkTheme(true);
+      }
+      if (newSettings.appTheme === 'Light') {
+        this.toggleDarkTheme(false);
+      }
+    });
   }
 
   private checkIfToggleDarkTheme(): void {

@@ -1,6 +1,7 @@
 import {ITempLog} from '../components/app-home/model';
 import {initializeApp} from 'firebase/app';
 import {Database, DataSnapshot, get, getDatabase, query, ref, set as dbSet} from 'firebase/database';
+import {getAuth, GoogleAuthProvider, signInWithPopup, UserCredential} from 'firebase/auth';
 import moment from 'moment';
 import {ISettings} from './settings';
 import {has, mean, round, set} from 'lodash';
@@ -29,7 +30,7 @@ export class FirebaseStorage {
   lastAllTempsRequest: Date;
   private myDatabase: Database | undefined;
 
-  async initFireBase(): Promise<void> {
+  async initFireBase(shouldLogin: boolean): Promise<void> {
 
 
     const firebaseConfig = {
@@ -43,8 +44,11 @@ export class FirebaseStorage {
       // measurementId: 'G-85J8DHXQP3'
     };
 
-
     let firebaseApp = initializeApp(firebaseConfig);
+
+    if (shouldLogin) {
+      await this.logIn();
+    }
 
     this.myDatabase = getDatabase(firebaseApp);
   }
@@ -158,6 +162,24 @@ export class FirebaseStorage {
     const data = snapshot.val();
     this.lastDate = data;
     return data || {};
+  }
+
+  private logIn(): Promise<UserCredential> {
+    const provider = new GoogleAuthProvider();
+
+    const auth = getAuth();
+
+    try {
+      return signInWithPopup(auth, provider);
+    } catch (error) {
+      // Handle Errors here.
+      const errorMessage = error.message;
+      // The email of the user's account used.
+      const email = error.customData.email;
+
+      console.log(errorMessage);
+      alert(`Could not authenticate with email: ${email}`);
+    }
   }
 
   private makeDbRequest(path: string): Promise<DataSnapshot> {

@@ -5,7 +5,6 @@ import android.os.Bundle;
 import com.capacitorjs.plugins.app.AppPlugin;
 import com.capacitorjs.plugins.toast.ToastPlugin;
 import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.community.keepawake.KeepAwake;
 
 public class MainActivity extends BridgeActivity {
   @Override
@@ -14,6 +13,5 @@ public class MainActivity extends BridgeActivity {
 
     registerPlugin(AppPlugin.class);
     registerPlugin(ToastPlugin.class);
-    registerPlugin(KeepAwake.class);
   }
 }
