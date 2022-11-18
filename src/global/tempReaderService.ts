@@ -104,13 +104,16 @@ export class TempReaderService {
       tap(async (value: number) => {
         this.lastReading = value;
         if (!Settings.readonlyAppMode) {
-          this.storage.store$.next({
-            temp: value,
-            date: Date.now()
-          });
+          let isLoggedIn = localStorage.getItem('isLoggedIn');
+          if (isLoggedIn) {
+            this.storage.store$.next({
+              temp: value,
+              date: Date.now()
+            });
+          }
         }
       })
     );
-  }
+  };
 }
 

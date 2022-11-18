@@ -10,7 +10,10 @@ import {TempKeeper} from '../../global/tempKeeper';
 import {IPowerChangeResponse} from './model';
 import {Settings} from '../my-app/settings';
 import {BackgroundService} from '../../global/backgroundService';
-import {Plugins} from '@capacitor/core';
+import {Capacitor, Plugins} from '@capacitor/core';
+import {AppThemeSetting} from '../app-settings/model';
+import {ISettings} from '../../global/settings';
+import {alertController} from '@ionic/core';
 
 @Component({
   tag: 'app-home',
@@ -75,7 +78,20 @@ export class AppHome {
 
     await this.updateGauge();
 
-    forceUpdate(this.el);
+    if (!Settings.dontShowViewModeChooser) {
+      await this.askForReadOnlyMode();
+    }
+
+    this.checkIfToggleDarkTheme();
+
+    Settings.changed$.subscribe((newSettings: ISettings) => {
+      if (newSettings.appTheme === 'Dark') {
+        this.toggleDarkTheme(true);
+      }
+      if (newSettings.appTheme === 'Light') {
+        this.toggleDarkTheme(false);
+      }
+    });
 
     this.domReady.emit();
 
@@ -150,6 +166,10 @@ export class AppHome {
   }
 
   private async registerPhoneAppOnlyPlugins(): Promise<void> {
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+
     try {
       await Plugins.KeepAwake.keepAwake();
     } catch (e) {
@@ -284,6 +304,62 @@ export class AppHome {
     } else {
       await this.consoleElement.viewOff();
     }
+  }
+
+  private checkIfToggleDarkTheme(): void {
+
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const shouldToggleDark = (prefersDark: boolean) => {
+      if (prefersDark && Settings.appTheme === AppThemeSetting.SystemDefault) {
+        return true;
+      }
+      return Settings.appTheme === AppThemeSetting.Dark;
+    };
+
+    this.toggleDarkTheme(shouldToggleDark(prefersDark.matches));
+
+    // Listen for changes to the prefers-color-scheme media query
+    prefersDark.addListener((mediaQuery: MediaQueryListEvent) => this.toggleDarkTheme(shouldToggleDark(mediaQuery.matches)));
+  }
+
+  private async askForReadOnlyMode(): Promise<void> {
+    const alert = await alertController.create({
+      backdropDismiss: false,
+      message: 'Should app be in read only mode ?',
+      inputs: [
+        {
+          type: 'checkbox',
+          label: `Yes`,
+          value: 'readonlyMode',
+          checked: Settings.readonlyAppMode,
+        },
+        {
+          type: 'checkbox',
+          label: `Don't show again`,
+          value: 'dontShowAgain',
+          checked: false,
+        }
+      ],
+      buttons: [
+        {
+          text: 'Close it',
+          cssClass: 'primary',
+          handler: (data: string[]) => {
+            Settings.dontShowViewModeChooser = data.includes('dontShowAgain');
+            Settings.readonlyAppMode = data.includes('readonlyMode');
+
+            alert.dismiss();
+          }
+        }
+      ]
+    });
+
+    return alert.present();
+  }
+
+  private toggleDarkTheme(shouldAdd: boolean): void {
+    document.body.classList.toggle('dark', shouldAdd);
   }
 }
 

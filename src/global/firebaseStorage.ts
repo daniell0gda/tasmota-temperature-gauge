@@ -1,7 +1,7 @@
 import {ITempLog} from '../components/app-home/model';
-import {initializeApp} from 'firebase/app';
+import {FirebaseApp, initializeApp} from 'firebase/app';
 import {Database, DataSnapshot, get, getDatabase, query, ref, set as dbSet} from 'firebase/database';
-import {getAuth, GoogleAuthProvider, signInWithPopup, UserCredential} from 'firebase/auth';
+import {getAuth, GoogleAuthProvider, signInWithCredential, signInWithPopup} from 'firebase/auth';
 import moment from 'moment';
 import {ISettings} from './settings';
 import {has, mean, round, set} from 'lodash';
@@ -21,6 +21,10 @@ interface ILastDate {
   lastHour?: number;
 }
 
+export interface InitLoginResult {
+  shouldReloadPage: boolean;
+}
+
 export class FirebaseStorage {
   tableName: string = 'temps';
   hook: number;
@@ -30,7 +34,7 @@ export class FirebaseStorage {
   lastAllTempsRequest: Date;
   private myDatabase: Database | undefined;
 
-  async initFireBase(shouldLogin: boolean): Promise<void> {
+  async initFireBase(): Promise<void> {
 
 
     const firebaseConfig = {
@@ -46,8 +50,17 @@ export class FirebaseStorage {
 
     let firebaseApp = initializeApp(firebaseConfig);
 
-    if (shouldLogin) {
-      await this.logIn();
+    let refreshToken = localStorage.getItem('user');
+    if (!refreshToken) {
+      await this.logIn(firebaseApp);
+    } else {
+      try{
+        let credential = GoogleAuthProvider.credential(null, refreshToken);
+        await signInWithCredential(getAuth(firebaseApp), credential);
+      }
+      catch (e) {
+        await this.logIn(firebaseApp);
+      }
     }
 
     this.myDatabase = getDatabase(firebaseApp);
@@ -164,13 +177,19 @@ export class FirebaseStorage {
     return data || {};
   }
 
-  private logIn(): Promise<UserCredential> {
+  private async logIn(firebaseApp: FirebaseApp): Promise<void> {
     const provider = new GoogleAuthProvider();
 
-    const auth = getAuth();
+    const auth = getAuth(firebaseApp);
 
     try {
-      return signInWithPopup(auth, provider);
+      let signResult = await signInWithPopup(auth, provider);
+
+      const credential = GoogleAuthProvider.credentialFromResult(signResult);
+      let token = credential.accessToken;
+      localStorage.setItem('user', token);
+
+      return;
     } catch (error) {
       // Handle Errors here.
       const errorMessage = error.message;
