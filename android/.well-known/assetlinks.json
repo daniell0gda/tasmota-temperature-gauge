@@ -1,0 +1,5 @@
+[{
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target" : { "namespace": "android_app", "package_name": "com.tasmota.temperature.app",
+                 "sha256_cert_fingerprints": ["9B:42:6A:28:29:25:E6:6C:6B:52:89:78:F1:EA:92:13:C5:8D:96:BD:78:92:94:A3:D7:82:36:11:0A:5A:55:FD"] }
+  }]

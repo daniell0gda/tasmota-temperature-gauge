@@ -1,6 +1,7 @@
 import {Component, Element, h, Listen} from '@stencil/core';
 import {HTMLStencilElement} from '@stencil/core/internal';
 import {createRouter, Route} from 'stencil-router-v2';
+import {App} from '@capacitor/app';
 
 const Router = createRouter();
 
@@ -17,6 +18,10 @@ export class MyApp {
 
   async componentWillLoad(): Promise<void> {
     Router.push('/');
+
+    App.addListener('appUrlOpen', () => {
+      Router.push('/app');
+    });
   }
 
   async componentDidLoad(): Promise<void> {

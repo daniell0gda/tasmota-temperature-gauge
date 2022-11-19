@@ -39,6 +39,7 @@
     "@capacitor/android": "^4.0.0",
     "@capacitor/app": "^4.0.1",
     "@capacitor/cli": "^4.0.0",
+    "@capacitor/configure": "^2.0.10",
     "@capacitor/core": "^4.0.0",
     "@capacitor/device": "^4.0.1",
     "@capacitor/toast": "^4.0.1",

@@ -1,0 +1,14 @@
+vars:
+  BUNDLE_ID:
+    default: com.tasmota.temperature
+  PACKAGE_NAME:
+    default: com.tasmota.temperature
+
+platforms:
+  ios:
+    targets:
+      App:
+        bundleId: com.tasmota.temperature
+
+  android:
+    packageName: com.tasmota.temperature

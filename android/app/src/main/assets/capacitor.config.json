@@ -1,7 +1,7 @@
 {
 	"appId": "com.tasmota.temperature.app",
 	"appName": "tasmota-temperature-gauge",
-	"bundledWebRuntime": false,
+	"bundledWebRuntime": true,
 	"npmClient": "npm",
 	"webDir": "www",
 	"plugins": {
@@ -14,6 +14,6 @@
 	},
 	"server": {
 		"cleartext": true,
-		"hostname": "localhost"
+		"hostname": "localhost:9533"
 	}
 }
