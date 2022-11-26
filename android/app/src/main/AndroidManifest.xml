@@ -17,11 +17,13 @@
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask">
 
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-                <data android:scheme="http" android:host="localhost:9533" />
             </intent-filter>
+
+          <meta-data android:name="android.app.shortcuts"
+            android:resource="@xml/shortcuts" />
 
         </activity>
 

@@ -4,4 +4,5 @@
     <string name="title_activity_main">tasmota-temperature-gauge</string>
     <string name="package_name">com.tasmota.temperature.app</string>
     <string name="custom_url_scheme">com.tasmota.temperature.app</string>
+    <string name="compose_shortcut_short_label1">Temp</string>
 </resources>
