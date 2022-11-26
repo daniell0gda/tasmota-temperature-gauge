@@ -1,15 +1,7 @@
 import {ITempLog} from '../components/app-home/model';
 import {FirebaseApp, initializeApp} from 'firebase/app';
 import {Database, DataSnapshot, get, getDatabase, query, ref, set as dbSet} from 'firebase/database';
-import {
-  browserLocalPersistence,
-  browserPopupRedirectResolver,
-  getAuth,
-  GoogleAuthProvider,
-  setPersistence,
-  signInWithCredential,
-  signInWithRedirect
-} from 'firebase/auth';
+import {browserLocalPersistence, getAuth, setPersistence, signInWithEmailAndPassword} from 'firebase/auth';
 import moment from 'moment';
 import {ISettings} from './settings';
 import {has, mean, round, set} from 'lodash';
@@ -58,17 +50,7 @@ export class FirebaseStorage {
 
     let firebaseApp = initializeApp(firebaseConfig);
 
-    let refreshToken = localStorage.getItem('user');
-    if (!refreshToken) {
-      await this.logIn(firebaseApp);
-    } else {
-      try {
-        let credential = GoogleAuthProvider.credential(null, refreshToken);
-        await signInWithCredential(getAuth(firebaseApp), credential);
-      } catch (e) {
-        await this.logIn(firebaseApp);
-      }
-    }
+    await this.logIn(firebaseApp);
 
     this.myDatabase = getDatabase(firebaseApp);
   }
@@ -189,15 +171,9 @@ export class FirebaseStorage {
     await setPersistence(auth, browserLocalPersistence);
 
     try {
+      let password = prompt('Password??');
+      await signInWithEmailAndPassword(auth, 'daniel.z.gdanska@gmail.com', password);
 
-      let signResult = await signInWithRedirect(auth, new GoogleAuthProvider(), browserPopupRedirectResolver);
-
-      const credential = GoogleAuthProvider.credentialFromResult(signResult);
-      let token = credential.accessToken;
-      localStorage.setItem('user', token);
-
-
-      return;
     } catch (error) {
       // Handle Errors here.
       const errorMessage = error.message;
