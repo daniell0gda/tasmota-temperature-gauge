@@ -61,7 +61,7 @@ export class AppSettings {
   }
 
   get urlValue(): string {
-    return this.usedSettings?.urlValue;
+    return this.usedSettings?.urlValue?.trim();
   }
 
   set urlValue(value: string) {
