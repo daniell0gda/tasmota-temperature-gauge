@@ -7,7 +7,6 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 import { Log } from "./components/console-component/model";
 import { Router } from "stencil-router-v2";
-import { PointOptionsType } from "highcharts";
 export namespace Components {
     interface AppHome {
     }
@@ -34,7 +33,6 @@ export namespace Components {
         "_max": number;
         "_min": number;
         "_temps": string;
-        "addPoint": (date: number, temp: number) => Promise<void>;
         "viewOff": () => Promise<void>;
         "viewOn": () => Promise<void>;
     }

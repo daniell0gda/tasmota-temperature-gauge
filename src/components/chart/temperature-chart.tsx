@@ -6,9 +6,9 @@ import {iif, interval, NEVER, Subject} from 'rxjs';
 import {mergeMap, startWith, switchMap, takeUntil, takeWhile} from 'rxjs/operators';
 import {fromPromise} from 'rxjs/internal-compatibility';
 import {Color, loadingController} from '@ionic/core';
-import Highcharts, {Chart, PointOptionsType} from 'highcharts';
+import Highcharts, {Chart} from 'highcharts';
 import darkTheme from 'highcharts/themes/dark-unica';
-import {mean, round} from 'lodash';
+import {mean, round, sortBy} from 'lodash';
 import {ITempLog} from '../app-home/model';
 import moment from 'moment';
 
@@ -22,7 +22,7 @@ export class TemperatureChart {
   @Prop() _temps: string = '';
   @Prop() _min: number = 10;
   @Prop() _max: number = 30;
-  chartData: [number, (number | null)][] = [];
+  chartData: [unknown, (number | null)][] = [];
   loading?: HTMLIonLoadingElement;
   private storage: SensorStorage = new SensorStorage();
 
@@ -31,11 +31,6 @@ export class TemperatureChart {
   private shouldRefresh: boolean = false;
   private tickSize: 'hour' | 'day' | 'all' = 'hour';
   private higchart: Chart;
-
-  constructor() {
-
-
-  }
 
   async componentWillLoad(): Promise<void> {
     this.refreshView$.pipe(
@@ -58,8 +53,8 @@ export class TemperatureChart {
       });
     });
     await this.setMainChart(this.chartData);
-    const loader = setInterval(()=> {
-      if(document.readyState !== 'complete') return;
+    const loader = setInterval(() => {
+      if (document.readyState !== 'complete') return;
       clearInterval(loader);
       this.setChartSize();
     }, 150);
@@ -124,14 +119,14 @@ export class TemperatureChart {
     this.refreshView$.next(false);
   }
 
-  @Method()
-  async addPoint(date: number, temp: number): Promise<void> {
-
-    if (!this.shouldRefresh) {
-      return;
-    }
-    this.higchart.series[0].addPoint([date, temp] as PointOptionsType);
-  }
+  // @Method()
+  // async addPoint(date: number, temp: number): Promise<void> {
+  //
+  //   if (!this.shouldRefresh) {
+  //     return;
+  //   }
+  //   this.higchart.series[0].addPoint([date, temp] as PointOptionsType);
+  // }
 
   private async setChartSize(): Promise<void> {
     const buttons = this.el.querySelector('.log-buttons');
@@ -148,7 +143,7 @@ export class TemperatureChart {
     }, false, false, false);
   }
 
-  private async setMainChart(chartData: [number, number][]): Promise<void> {
+  private async setMainChart(chartData: [unknown, number][]): Promise<void> {
     darkTheme(Highcharts);
 
     this.higchart = Highcharts.chart('higChartContainer', {
@@ -164,7 +159,10 @@ export class TemperatureChart {
           'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in'
       },
       xAxis: {
-        type: 'datetime',
+        type: 'category',
+       labels: {
+         step:1
+       }
       },
       yAxis: {
         title: {
@@ -264,7 +262,6 @@ export class TemperatureChart {
   private async setTickSizeDay(): Promise<void> {
     this.tickSize = 'day';
 
-
     await this.calculateMeanTemps('day');
 
     await this.updateSeries();
@@ -278,18 +275,18 @@ export class TemperatureChart {
 
     this.chartData = [];
 
-    await this.loadAllDataFromStorage();
+    await this.calculateMeanTemps('day', false);
     await this.updateSeries();
-
-
   }
 
-  private async calculateMeanTemps(unit: 'hour' | 'day'): Promise<void> {
+  private async calculateMeanTemps(unit: 'hour' | 'day', onlyThisMonth:boolean = true): Promise<void> {
     this.chartData = [];
 
     let logs = await this.storage.getTemperatures();
     delete logs['last'];
     const days = Object.values(logs);
+
+    let toSort: {time:number, chartData:[unknown, number]}[] = [];
 
     for (const tick of days) {
       delete tick['processed'];
@@ -302,9 +299,12 @@ export class TemperatureChart {
             continue;
           }
           const hours = hour.map((h: ITempLog) => h.temp);
-          const newDate = moment(hour[0].date).minute(0).second(0).toDate().getTime();
-          this.chartData.push([newDate, round(mean(hours), 2)]);
+          const newDate = moment(hour[0].date).minute(0).second(0).millisecond(0).toDate().getTime();
+          this.chartData.push([moment(newDate).format('HH:MM'), round(mean(hours), 2)]);
         }
+
+        // I want only hourly temps from one day
+        break;
       }
       if (unit === 'day') {
         let ticks: number[] = [];
@@ -316,12 +316,29 @@ export class TemperatureChart {
         }
 
         const filtered = ticks.filter((tick: number) => !!tick);
-        // const newDate = moment(hours[0][0].date).minute(0).second(0).hour(0).toDate().getTime();
-        this.chartData.push([hours[0][0].date, round(mean(filtered), 2)]);
+
+        let dateStr= moment(hours[0][0].date).format('DD-MM-YYYY');
+        let items:[unknown, number] = [dateStr, round(mean(filtered), 2)];
+        toSort.push({time:hours[0][0].date, chartData:items});
       }
     }
-  }
 
+    if(unit === 'day'){
+      let thisMonth = moment(new Date()).month();
+      let thisYear = moment(new Date()).year();
+      this.chartData = sortBy(toSort, 'time').filter((d: { time: number; chartData: [unknown, number] }): boolean => {
+
+        if(!onlyThisMonth)
+        {
+          return true;
+        }
+
+        let currMoment = moment(d.time);
+        return currMoment.month() === thisMonth && currMoment.year() === thisYear;
+      }).map((d: { time: number; chartData: [unknown, number] })=>d.chartData);
+    }
+
+  }
   private async updateSeries(): Promise<void> {
     this.higchart.series[0].setData(this.chartData as any);
   }

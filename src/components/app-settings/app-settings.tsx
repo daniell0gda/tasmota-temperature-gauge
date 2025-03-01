@@ -145,7 +145,7 @@ export class AppSettingsComponent {
             </ion-select>
           </ion-item>
           <ion-item>
-            <ion-label position="stacked">Readonly</ion-label>
+            <ion-label position="stacked">Readonly (Doesn't send temp updates to firebase)</ion-label>
             <ion-toggle
               checked={Settings.readonlyAppMode}
               onIonChange={(ev: CustomEvent<ToggleChangeEventDetail>) => this.readOnlyAppChanged(ev.detail.checked)}/>

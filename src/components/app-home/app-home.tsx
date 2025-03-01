@@ -116,7 +116,7 @@ export class AppHome {
               {this.currentTemp}
             </div>
             <div
-              hidden={this.devicePower?.POWER === 'OFF'}
+              hidden={this.devicePower?.POWER === 'OFF' || !Settings.settingsFromServer.useAsThermostat}
               class={{
                 'freezingIcon': true
               }}>
@@ -212,7 +212,7 @@ export class AppHome {
         this.currentTemp = temp;
         this.keeper.currentTemp = temp;
 
-        this.tempChart.addPoint(Date.now(), temp);
+        // this.tempChart.addPoint(Date.now(), temp);
 
         const tempInRangeBefore = this.tempInRange;
         this.tempInRange = temp <= Settings.maxTemp && temp >= Settings.minTemp;
@@ -326,7 +326,7 @@ export class AppHome {
   private async askForReadOnlyMode(): Promise<void> {
     const alert = await alertController.create({
       backdropDismiss: false,
-      message: 'Should app be in read only mode ?',
+      message: `Should app be in read only mode ? ( Doesn't send temp updates to firebase )`,
       inputs: [
         {
           type: 'checkbox',
@@ -362,4 +362,3 @@ export class AppHome {
     document.body.classList.toggle('dark', shouldAdd);
   }
 }
-

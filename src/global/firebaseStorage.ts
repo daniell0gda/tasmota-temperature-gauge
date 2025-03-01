@@ -170,18 +170,29 @@ export class FirebaseStorage {
     const auth = getAuth(firebaseApp);
     await setPersistence(auth, browserLocalPersistence);
 
+    let pass = localStorage.getItem('firebase_last_user_pass');
+
     try {
-      let password = prompt('Password??');
-      await signInWithEmailAndPassword(auth, 'daniel.z.gdanska@gmail.com', password);
+      if(!pass){
+        pass = prompt('Password?? (Saved in Firebase for daniel.z.gdanska@gmail.com)');
+        localStorage.setItem('firebase_last_user_pass', pass);
+      }
+
+      await signInWithEmailAndPassword(auth, 'daniel.z.gdanska@gmail.com', pass);
+
+      localStorage.setItem('isLoggedIn', 'true');
 
     } catch (error) {
+      localStorage.removeItem('isLoggedIn');
+
+
       // Handle Errors here.
       const errorMessage = error.message;
       // The email of the user's account used.
-      const email = error.customData.email;
+      // const email = error.customData.email;
 
       console.log(errorMessage);
-      alert(`Could not authenticate with email: ${email}`);
+      alert(`Could not authenticate with email: daniel.z.gdanska@gmail.com`);
     }
   }
 
