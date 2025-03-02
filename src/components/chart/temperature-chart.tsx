@@ -159,10 +159,7 @@ export class TemperatureChart {
           'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in'
       },
       xAxis: {
-        type: 'category',
-       labels: {
-         step:1
-       }
+        type: 'category'
       },
       yAxis: {
         title: {
@@ -315,27 +312,31 @@ export class TemperatureChart {
           ticks = [...ticks, ...hour.map((h: ITempLog) => h.temp)];
         }
 
+        let currentDay = hours[0][0].date;
+        let thisMonth = moment(new Date()).month();
+        let thisYear = moment(new Date()).year();
+
+        if(onlyThisMonth)
+        {
+          let currMoment = moment(currentDay);
+          if(currMoment.month() !== thisMonth || currMoment.year() !== thisYear){
+            continue;
+          }
+        }
+
+
         const filtered = ticks.filter((tick: number) => !!tick);
 
-        let dateStr= moment(hours[0][0].date).format('DD-MM-YYYY');
+        let dateStr= moment(currentDay).format('DD-MM-YYYY');
         let items:[unknown, number] = [dateStr, round(mean(filtered), 2)];
-        toSort.push({time:hours[0][0].date, chartData:items});
+        toSort.push({time:currentDay, chartData:items});
       }
     }
 
     if(unit === 'day'){
-      let thisMonth = moment(new Date()).month();
-      let thisYear = moment(new Date()).year();
-      this.chartData = sortBy(toSort, 'time').filter((d: { time: number; chartData: [unknown, number] }): boolean => {
 
-        if(!onlyThisMonth)
-        {
-          return true;
-        }
-
-        let currMoment = moment(d.time);
-        return currMoment.month() === thisMonth && currMoment.year() === thisYear;
-      }).map((d: { time: number; chartData: [unknown, number] })=>d.chartData);
+      this.chartData = sortBy(toSort, 'time')
+        .map((d: { time: number; chartData: [unknown, number] })=>d.chartData);
     }
 
   }

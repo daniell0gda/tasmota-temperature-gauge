@@ -144,7 +144,7 @@ export class TempKeeper {
       httpAddress,
       {
         method: 'GET',
-        // mode: 'no-cors'
+        mode: 'cors'
       }
     ).pipe(
       catchError((error: any) => {

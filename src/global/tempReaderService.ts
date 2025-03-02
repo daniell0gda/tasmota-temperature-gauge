@@ -66,7 +66,7 @@ export class TempReaderService {
       httpAddress,
       {
         method: 'GET',
-        // mode: 'no-cors'
+        mode: 'cors'
       }
     ).pipe(
       catchError(async (error: any) => {
@@ -116,4 +116,3 @@ export class TempReaderService {
     );
   };
 }
-

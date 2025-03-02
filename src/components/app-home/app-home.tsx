@@ -10,10 +10,11 @@ import {TempKeeper} from '../../global/tempKeeper';
 import {IPowerChangeResponse} from './model';
 import {Settings} from '../my-app/settings';
 import {BackgroundService} from '../../global/backgroundService';
-import {Capacitor, Plugins} from '@capacitor/core';
+import {Capacitor} from '@capacitor/core';
 import {AppThemeSetting} from '../app-settings/model';
 import {ISettings} from '../../global/settings';
 import {alertController} from '@ionic/core';
+import {KeepAwake} from '@capacitor-community/keep-awake';
 
 @Component({
   tag: 'app-home',
@@ -171,7 +172,7 @@ export class AppHome {
     }
 
     try {
-      await Plugins.KeepAwake.keepAwake();
+      await KeepAwake.keepAwake();
     } catch (e) {
       console.warn([`Not valid on phone register feature`, e.toString()].join('\n'));
     }
