@@ -2,7 +2,7 @@ const {sass} = require('@stencil/sass');
 exports.config = {
   outputTargets: [{
     type: 'www',
-    baseUrl:'http://piwotworki',
+    baseUrl:'http://localhost:9533',
     serviceWorker: null
   }],
 

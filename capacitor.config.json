@@ -14,6 +14,7 @@
   },
   "server": {
     "cleartext": true,
-    "hostname": "localhost:9533"
+    "hostname": "localhost:9533",
+    "androidScheme": "http"
   }
 }

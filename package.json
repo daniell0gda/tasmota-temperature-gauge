@@ -34,15 +34,14 @@
     "cap:update": "npm run cap:build && npm run cap:sync && npm run adb:open-app"
   },
   "dependencies": {
-    "@capacitor-community/electron": "^1.3.2",
-    "@capacitor-community/keep-awake": "^3.0.0",
-    "@capacitor/android": "^4.0.0",
-    "@capacitor/app": "^4.0.1",
-    "@capacitor/cli": "^4.0.0",
+    "@capacitor-community/electron": "^5.0.1",
+    "@capacitor-community/keep-awake": "^5.0.1",
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.2",
     "@capacitor/configure": "^2.0.10",
-    "@capacitor/core": "^4.0.0",
-    "@capacitor/device": "^4.0.1",
-    "@capacitor/toast": "^4.0.1",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/device": "^6.0.2",
+    "@capacitor/toast": "^6.0.3",
     "@ionic-native/autostart": "^5.30.0",
     "@ionic-native/backlight": "^5.30.0",
     "@ionic/core": "^5.5.2",
@@ -66,6 +65,7 @@
     "url-join": "^4.0.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
     "@electron-forge/cli": "^6.0.0-beta.54",
     "@electron-forge/maker-deb": "^6.0.0-beta.54",
     "@electron-forge/maker-rpm": "^6.0.0-beta.54",
