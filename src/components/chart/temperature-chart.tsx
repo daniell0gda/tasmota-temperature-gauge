@@ -11,6 +11,7 @@ import darkTheme from 'highcharts/themes/dark-unica';
 import {mean, round, sortBy} from 'lodash';
 import {ITempLog} from '../app-home/model';
 import moment from 'moment';
+import {IDateTemp} from '../../global/firebaseStorage';
 
 
 @Component({
@@ -276,16 +277,22 @@ export class TemperatureChart {
     await this.updateSeries();
   }
 
-  private async calculateMeanTemps(unit: 'hour' | 'day', onlyThisMonth:boolean = true): Promise<void> {
+  private async calculateMeanTemps(unit: 'hour' | 'day', onlyThisMonth: boolean = true): Promise<void> {
     this.chartData = [];
 
     let logs = await this.storage.getTemperatures();
     delete logs['last'];
-    const days = Object.values(logs);
 
-    let toSort: {time:number, chartData:[unknown, number]}[] = [];
+    let dates = Object.keys(logs);
+    let dateFormat = 'DD-MM-YYYY';
+    let sortedDates = sortBy(dates, d => moment(d, dateFormat).toDate().getTime()).reverse();
 
-    for (const tick of days) {
+    let toSort: { time: number, chartData: [unknown, number] }[] = [];
+
+    for (const dateStr of sortedDates) {
+      let dateString = dateStr;
+      let tick: IDateTemp = logs[dateStr];
+
       delete tick['processed'];
 
       const hours = Object.values(tick);
@@ -312,14 +319,12 @@ export class TemperatureChart {
           ticks = [...ticks, ...hour.map((h: ITempLog) => h.temp)];
         }
 
-        let currentDay = hours[0][0].date;
+        let currentDay = moment(dateString, dateFormat);
         let thisMonth = moment(new Date()).month();
         let thisYear = moment(new Date()).year();
 
-        if(onlyThisMonth)
-        {
-          let currMoment = moment(currentDay);
-          if(currMoment.month() !== thisMonth || currMoment.year() !== thisYear){
+        if (onlyThisMonth) {
+          if (currentDay.month() !== thisMonth || currentDay.year() !== thisYear) {
             continue;
           }
         }
@@ -327,19 +332,20 @@ export class TemperatureChart {
 
         const filtered = ticks.filter((tick: number) => !!tick);
 
-        let dateStr= moment(currentDay).format('DD-MM-YYYY');
-        let items:[unknown, number] = [dateStr, round(mean(filtered), 2)];
-        toSort.push({time:currentDay, chartData:items});
+        let dateStr = moment(currentDay).format(dateFormat);
+        let items: [unknown, number] = [dateStr, round(mean(filtered), 2)];
+        toSort.push({time: currentDay.toDate().getTime(), chartData: items});
       }
     }
 
-    if(unit === 'day'){
+    if (unit === 'day') {
 
       this.chartData = sortBy(toSort, 'time')
-        .map((d: { time: number; chartData: [unknown, number] })=>d.chartData);
+        .map((d: { time: number; chartData: [unknown, number] }) => d.chartData);
     }
 
   }
+
   private async updateSeries(): Promise<void> {
     this.higchart.series[0].setData(this.chartData as any);
   }

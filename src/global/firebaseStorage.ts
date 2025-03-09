@@ -11,7 +11,7 @@ export interface ITemps {
   [date: string]: IDateTemp;
 }
 
-interface IDateTemp {
+export interface IDateTemp {
 
   [hour: number]: ITempLog[];
 }
