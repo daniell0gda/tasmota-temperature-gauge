@@ -279,71 +279,113 @@ export class TemperatureChart {
 
   private async calculateMeanTemps(unit: 'hour' | 'day', onlyThisMonth: boolean = true): Promise<void> {
     this.chartData = [];
+    const logs = await this.fetchAndCleanLogs();
+    const sortedDates = this.getSortedDates(logs);
 
-    let logs = await this.storage.getTemperatures();
+    if (unit === 'hour') {
+      this.processHourlyData(logs, sortedDates[0]);
+    } else if (unit === 'day') {
+      this.processDailyData(logs, sortedDates, onlyThisMonth);
+    }
+  }
+
+  private async fetchAndCleanLogs(): Promise<Record<string, IDateTemp>> {
+    const logs = await this.storage.getTemperatures();
     delete logs['last'];
+    return logs;
+  }
 
-    let dates = Object.keys(logs);
-    let dateFormat = 'DD-MM-YYYY';
-    let sortedDates = sortBy(dates, d => moment(d, dateFormat).toDate().getTime()).reverse();
+  private getSortedDates(logs: Record<string, IDateTemp>): string[] {
+    const dates = Object.keys(logs);
+    const dateFormat = 'DD-MM-YYYY';
+    return sortBy(dates, d => moment(d, dateFormat).toDate().getTime()).reverse();
+  }
 
-    let toSort: { time: number, chartData: [unknown, number] }[] = [];
+  private processHourlyData(logs: Record<string, IDateTemp>, dateStr: string): void {
+    const tick = logs[dateStr];
+    delete tick['processed'];
+    const hours = Object.values(tick);
+
+    const items = this.extractHourlyItems(hours);
+    this.chartData = sortBy(items, item => item.time)
+      .map(item => [item.format, item.value]);
+  }
+
+  private extractHourlyItems(hours: any[]): { time: number, format: string, value: number }[] {
+    const items: { time: number, format: string, value: number }[] = [];
+
+    for (const hourTimeStamps of hours) {
+      if (hourTimeStamps.length === 0) {
+        continue;
+      }
+
+      const temperatures = hourTimeStamps.map((h: ITempLog) => h.temp);
+      const timestamp = this.normalizeToHour(hourTimeStamps[0].date);
+      const hourString = moment(timestamp).format('HH:00');
+
+      items.push({
+        time: timestamp,
+        format: hourString,
+        value: this.calculateMean(temperatures)
+      });
+    }
+
+    return items;
+  }
+
+  private normalizeToHour(date: Date | string | number): number {
+    return moment(date).minute(0).second(0).millisecond(0).toDate().getTime();
+  }
+
+  private processDailyData(logs: Record<string, IDateTemp>, sortedDates: string[], onlyThisMonth: boolean): void {
+    const toSort: { time: number, chartData: [unknown, number] }[] = [];
+    const currentMonth = moment(new Date()).month();
+    const currentYear = moment(new Date()).year();
+    const dateFormat = 'DD-MM-YYYY';
 
     for (const dateStr of sortedDates) {
-      let dateString = dateStr;
-      let tick: IDateTemp = logs[dateStr];
+      const currentDate = moment(dateStr, dateFormat);
 
-      delete tick['processed'];
-
-      const hours = Object.values(tick);
-
-      if (unit === 'hour') {
-        for (const hour of hours) {
-          if (hour.length === 0) {
-            continue;
-          }
-          const hours = hour.map((h: ITempLog) => h.temp);
-          const newDate = moment(hour[0].date).minute(0).second(0).millisecond(0).toDate().getTime();
-          this.chartData.push([moment(newDate).format('HH:MM'), round(mean(hours), 2)]);
-        }
-
-        // I want only hourly temps from one day
-        break;
+      if (onlyThisMonth && !this.isCurrentMonthAndYear(currentDate, currentMonth, currentYear)) {
+        continue;
       }
-      if (unit === 'day') {
-        let ticks: number[] = [];
-        for (const hour of hours) {
-          if (hour.length === 0) {
-            continue;
-          }
-          ticks = [...ticks, ...hour.map((h: ITempLog) => h.temp)];
-        }
 
-        let currentDay = moment(dateString, dateFormat);
-        let thisMonth = moment(new Date()).month();
-        let thisYear = moment(new Date()).year();
-
-        if (onlyThisMonth) {
-          if (currentDay.month() !== thisMonth || currentDay.year() !== thisYear) {
-            continue;
-          }
-        }
-
-
-        const filtered = ticks.filter((tick: number) => !!tick);
-
-        let dateStr = moment(currentDay).format(dateFormat);
-        let items: [unknown, number] = [dateStr, round(mean(filtered), 2)];
-        toSort.push({time: currentDay.toDate().getTime(), chartData: items});
+      const dailyTemperatures = this.extractDailyTemperatures(logs[dateStr]);
+      if (dailyTemperatures.length > 0) {
+        const meanTemp = this.calculateMean(dailyTemperatures);
+        const formattedDate = currentDate.format(dateFormat);
+        toSort.push({
+          time: currentDate.toDate().getTime(),
+          chartData: [formattedDate, meanTemp]
+        });
       }
     }
 
-    if (unit === 'day') {
+    this.chartData = sortBy(toSort, 'time')
+      .map(d => d.chartData);
+  }
 
-      this.chartData = sortBy(toSort, 'time')
-        .map((d: { time: number; chartData: [unknown, number] }) => d.chartData);
+  private isCurrentMonthAndYear(date: moment.Moment, month: number, year: number): boolean {
+    return date.month() === month && date.year() === year;
+  }
+
+  private extractDailyTemperatures(tick: IDateTemp): number[] {
+    delete tick['processed'];
+    const hours = Object.values(tick);
+
+    let temperatures: number[] = [];
+    for (const hour of hours) {
+      if (hour.length === 0) {
+        continue;
+      }
+      temperatures = [...temperatures, ...hour.map((h: ITempLog) => h.temp)];
     }
 
+    return temperatures.filter((temp: number) => !!temp);
+  }
+
+  private calculateMean(values: number[]): number {
+    return round(mean(values), 2);
   }
 
   private async updateSeries(): Promise<void> {
