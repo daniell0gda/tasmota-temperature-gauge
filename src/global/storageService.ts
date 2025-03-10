@@ -33,7 +33,6 @@ export class StorageService {
 
   async init(): Promise<void> {
     await AppStorage.initLastDay();
-    await AppStorage.initLastHourCache();
   }
 
   async getErrors(): Promise<ITempLog[]> {

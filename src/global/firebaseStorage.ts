@@ -30,7 +30,6 @@ export class FirebaseStorage {
   hook: number;
 
   lastDate: ILastDate;
-  temps: ITemps = {};
   lastAllTempsRequest: Date;
   private myDatabase: Database | undefined;
 
@@ -56,61 +55,53 @@ export class FirebaseStorage {
   }
 
   async storeTemp(date: number, temp: number): Promise<void> {
-    if (!this.hook) {
-      this.hook = date;
-    }
-
-    const sameDate = this.temps.lastDate === undefined || moment(date).isSame(this.temps.lastDate, 'day');
-
     const momentDate = moment(date);
-    const dateKey = momentDate.format('DD-MM-yyyy');
-
-    let dayCollection: IDateTemp = {};
-    if (!sameDate || !this.temps[dateKey]) {
-      dayCollection = this.temps[dateKey] = [];
-
-    } else {
-      dayCollection = this.temps[dateKey];
-    }
-
-    const sameHour = moment(date).isSame(this.hook, 'hour');
+    const dateKey = momentDate.format('DD-MM-YYYY');
     const hourKey = momentDate.hour();
-    let hourCollection: ITempLog[] = [];
-    if (!sameHour || !dayCollection[hourKey]) {
-      hourCollection = dayCollection[hourKey] = [];
-    } else {
-      hourCollection = dayCollection[hourKey];
-    }
 
-    this.hook = date;
 
-    hourCollection.push({
-      temp: temp, date: date
-    });
+    // Add the new temperature record
+    let newRecord = {
+      temp: temp,
+      date: date
+    };
 
+    // Update the last known date/hour (store as a Date object, not string)
     await this.setTemperatureLastDay({
-      lastDate: dateKey,
+      lastDate: `${date}`, // Store the actual date, not the string key
       lastHour: hourKey
     });
 
+    // Store in Firebase
     const firebasePath = this.hourKeyGet(dateKey, hourKey);
-
     console.log('firebase storing collection');
-    let databaseReference = ref(this.myDatabase, firebasePath);
-    return dbSet(databaseReference, hourCollection);
+
+    let myRef = ref(this.myDatabase, firebasePath);
+    try {
+      await get(myRef).then((snapshot: DataSnapshot) => {
+        if (snapshot.exists()) {
+          const currentArray = snapshot.val();
+          const newArray = [...currentArray, newRecord];
+          dbSet(myRef, newArray);
+        } else {
+          dbSet(myRef, [newRecord]);
+        }
+      });
+    } catch (error) {
+      console.error('Error storing temperature data:', error);
+      throw error; // Re-throw to allow caller to handle
+    }
+
+
   }
 
   async getAllTemperatures(): Promise<ITemps> {
-
-    if (this.lastAllTempsRequest && moment(this.lastAllTempsRequest).isSame(new Date(), 'hour')) {
-      return this.temps;
-    }
 
     const allTempsRef = 'temperatury';
     let databaseReference = ref(this.myDatabase, allTempsRef);
 
     let snapshot = await this.makeDbRequest('temperatury');
-    let allTemps = this.temps = snapshot.val();
+    let allTemps = snapshot.val();
 
     const anyChanged = await this.setMeanHoursForOldDays(allTemps);
     if (anyChanged) {
@@ -118,23 +109,8 @@ export class FirebaseStorage {
     }
 
     this.lastAllTempsRequest = new Date();
-    this.temps = allTemps;
 
     return allTemps;
-  }
-
-  async initLastHourCache(): Promise<ITemps> {
-    if (!this.lastDate) {
-      return {};
-    }
-
-    const firebasePath = this.hourKeyGet(this.lastDate.lastDate, this.lastDate.lastHour);
-
-    let snapshot = await this.makeDbRequest(firebasePath);
-    const data = snapshot.val();
-    this.setCacheOn(this.lastDate, data);
-
-    return data || [];
   }
 
   /**
@@ -274,24 +250,7 @@ export class FirebaseStorage {
     return anyChanged;
   }
 
-  private setCacheOn(key: ILastDate, temps: ITempLog [] = []): void {
-    if (!this.temps) {
-      this.temps = {};
-    }
 
-    if (!this.temps[key.lastDate]) {
-      this.temps[key.lastDate] = {};
-    }
-
-    if (!this.temps[key.lastDate][key.lastHour]) {
-      this.temps[key.lastDate][key.lastHour] = [];
-    }
-
-    if (!temps) {
-      temps = [];
-    }
-    this.temps[key.lastDate][key.lastHour] = temps;
-  }
 
   private hourKeyGet(day: string, hour: number): string {
     return `temperatury/${day}/${hour}`;
