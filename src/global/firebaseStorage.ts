@@ -18,7 +18,7 @@ export interface IDateTemp {
 
 interface ILastDate {
   lastDate?: string;
-  lastHour?: number;
+  lastHour?: string;
 }
 
 export interface InitLoginResult {
@@ -57,8 +57,7 @@ export class FirebaseStorage {
   async storeTemp(date: number, temp: number): Promise<void> {
     const momentDate = moment(date);
     const dateKey = momentDate.format('DD-MM-YYYY');
-    const hourKey = momentDate.hour();
-
+    const hourKey = momentDate.format('HH');
 
     // Add the new temperature record
     let newRecord = {
@@ -91,8 +90,6 @@ export class FirebaseStorage {
       console.error('Error storing temperature data:', error);
       throw error; // Re-throw to allow caller to handle
     }
-
-
   }
 
   async getAllTemperatures(): Promise<ITemps> {
@@ -252,7 +249,7 @@ export class FirebaseStorage {
 
 
 
-  private hourKeyGet(day: string, hour: number): string {
+  private hourKeyGet(day: string, hour: string): string {
     return `temperatury/${day}/${hour}`;
   }
 

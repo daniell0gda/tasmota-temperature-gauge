@@ -28,7 +28,7 @@
     "electron:tsc": "tsc electron/src/index.ts",
     "electron:buid": "npm run build && npx cap copy @capacitor-community/electron && npm run electron:tsc && npm ru",
     "adb:open-app": "adb shell monkey -p com.tasmota.temperature.app -c android.intent.category.LAUNCHER 1",
-    "cap:sync": "gradle:restart && adb connect 192.168.5.10:5555 && cd android/app/build/outputs/apk/debug && adb install -d -r app-debug.apk",
+    "cap:sync": "gradle:restart && adb connect 192.168.138.7:5555 && cd android\\app\\build\\outputs\\apk\\debug && adb install -d -r tasmota.temperature.app.apk",
     "gradle:restart": "adb kill-server && adb tcpip 5555",
     "cap:build": "npm run clean:dist && stencil build && npx cap sync && cd android && gradlew build",
     "cap:update": "npm run cap:build && npm run cap:sync && npm run adb:open-app"

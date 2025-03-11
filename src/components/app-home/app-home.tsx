@@ -15,6 +15,7 @@ import {AppThemeSetting} from '../app-settings/model';
 import {ISettings} from '../../global/settings';
 import {alertController} from '@ionic/core';
 import {KeepAwake} from '@capacitor-community/keep-awake';
+import {GlobalConsole} from '../../global/globalConsole';
 
 @Component({
   tag: 'app-home',
@@ -31,7 +32,7 @@ export class AppHome {
 
   sensorTempElement: HTMLSensorTempElement;
   consoleElement: HTMLConsoleComponentElement;
-  tempReaderService: TempReaderService = new TempReaderService();
+  tempReaderService: TempReaderService;
   notificationService: NotificationService = new NotificationService();
   currentTemp: number;
   sensorOnline: boolean = true;
@@ -40,11 +41,12 @@ export class AppHome {
   keeper: TempKeeper = new TempKeeper();
   devicePower: IPowerChangeResponse;
   backgroundService: BackgroundService;
+  globalLog = new GlobalConsole();
 
   private tempChart: HTMLTemperatureChartElement | undefined;
 
   constructor() {
-
+    this.tempReaderService = new TempReaderService(this.globalLog);
   }
 
   componentWillLoad(): void {
@@ -61,6 +63,10 @@ export class AppHome {
     this.manageDevice();
     this.startReadingTemp();
     this.keeper.msgFeed.subscribe(async (msg: string) => {
+      await this.logInfoMsg(msg);
+    });
+
+    this.globalLog.logInfo$.subscribe(async (msg: string) => {
       await this.logInfoMsg(msg);
     });
   }

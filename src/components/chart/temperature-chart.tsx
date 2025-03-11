@@ -302,9 +302,9 @@ export class TemperatureChart {
   }
 
   private processHourlyData(logs: Record<string, IDateTemp>, dateStr: string): void {
-    const tick = logs[dateStr];
-    delete tick['processed'];
-    const hours = Object.values(tick);
+    const hoursAndReadings = logs[dateStr];
+    delete hoursAndReadings['processed'];
+    const hours = Object.values(hoursAndReadings);
 
     const items = this.extractHourlyItems(hours);
     this.chartData = sortBy(items, item => item.time)

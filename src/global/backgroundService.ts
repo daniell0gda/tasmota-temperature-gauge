@@ -33,12 +33,7 @@ export class BackgroundService {
       await this.androidNotification.send('app state change', `app changed to: ${this.appInForeground}`);
 
       if (!state.isActive) {
-
-        this.consoleFeed$.next(extend(new Log(), {
-          value: 'Switching to background',
-          type: 'INFO',
-          time: new Date()
-        } as Log));
+        this.logInfo('Switching to background');
 
         await this.readTemp();
 
@@ -64,6 +59,14 @@ export class BackgroundService {
         this.killReading$.next(true);
       }
     });
+  }
+
+  logInfo(text:string): void {
+    this.consoleFeed$.next(extend(new Log(), {
+      value: text,
+      type: 'INFO',
+      time: new Date()
+    } as Log));
   }
 
   private async readTemp(): Promise<void> {

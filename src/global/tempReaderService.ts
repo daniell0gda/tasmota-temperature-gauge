@@ -6,6 +6,7 @@ import {catchError, distinctUntilChanged, exhaustMap, filter, map, startWith, sw
 import urljoin from 'url-join';
 import {SensorStorage} from './sensorStorage';
 import {Settings} from '../components/my-app/settings';
+import {GlobalConsole} from './globalConsole';
 
 export class TempReaderService {
 
@@ -15,9 +16,10 @@ export class TempReaderService {
 
   checkEvery: number = 2000;
   lastReading: number = 0;
-  storage: SensorStorage = new SensorStorage();
+  storage: SensorStorage;
 
-  constructor() {
+  constructor(consoleService:GlobalConsole=null) {
+    this.storage = new SensorStorage('sonoff-th10-temp-logs', consoleService);
     this.sensorStateChanged = new Subject();
   }
 
